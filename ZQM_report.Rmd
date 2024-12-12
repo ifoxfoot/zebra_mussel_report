@@ -11,9 +11,6 @@ output:
     number_sections: true
 toc-title: "Table of contents"
 sansfont: Calibri
-editor_options: 
-  markdown: 
-    wrap: 72
 ---
 
 # Purpose
