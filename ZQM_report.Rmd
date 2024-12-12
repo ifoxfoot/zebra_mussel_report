@@ -53,7 +53,7 @@ cat(readLines("data/README_USACE_Reservoirs.txt"), sep = '\n')
 
 
 ## Infestation patterns in USACE reservoirs
-Approximately 24% of the 352 reservoirs we examined have recorded Dreissenid presences according to USGS Non-indigenous Aquatic Species (NAS) data (Benson et al. 2024). The remaining 76% are currently considered un-infested (Table 1). Note that NAS data provides information on reports of Dreissenid presence only, and presence does not necessarily imply successful establishment. Absences are not reported.
+Approximately 24% of the 352 reservoirs we examined have recorded Dreissenid presences according to USGS Non-indigenous Aquatic Species (NAS) data (Benson et al. 2024). The remaining 76% are currently considered un-infested (Table 1). Note that NAS data provides information on reports of Dreissenid presence only, and presence does not necessarily imply successful establishment. Absences are not reported. Note also that the absence of positive records in a state (e.g., Michigan) does not imply that Dreissenids are not present there, just that no Dreissenids have been recorded in USACE reservoirs within the state.
 
 
 ```{r warning=FALSE, message=FALSE}
@@ -121,7 +121,10 @@ kable(infest[,c(3,2)],col.names = c("Infestation status","Number of reservoirs")
 
 
 ## Environmental thresholds
+
 We attempted to predict and assess Dreissenid infestation in USACE reservoirs using environmental data and assessed invasion risk based on discrete environmental thresholds that have been identified in the literature as facilitating or preventing Dreissenid invasion (Doll 1997; Sorba and Williamson 1997; Cohen and Weinstein 1998; Cohen 2005; Carrillo et al. 2023). We used these environmental thresholds to define reservoir characteristics that may lead to low, moderate, or high risk of Dreissenid infestation (Table 2). Since not all literature reported the same thresholds, we chose the most conservative values such that we were more likely to overestimate than underestimate risk of infestation. For example, if one study defined low risk habitat as areas with a hardness < 45 mg/L and another as < 55 mg/L, we selected 45 mg/L as the maximum hardness describing low risk habitat, resulting in a wider moderate risk category.
+
+Initially, we included maximum summer temperature in our risk assessment, but we found that the risk categories identified were not necessarily a good representation of invasion risk, as a higher proportion of moderate-risk reservoirs were already invaded by Dreissenids compared to high risk reservoirs. While maximum temperature is likely a factor that does limit Dreissenid range, the duration of high temperature events may be an important factor that was missing from our assessment. Since we have no information about how long maximum summer temperatures occurred, it is difficult to assess their affect on mussels, as Dreissenids may be able to survive short-term exposure to high temperatures but could have higher mortality during longer high temperature events (White et al., 2015). Hence, we removed maximum temperature from our risk assessment but included it in our statistical analyses investigating the relationship between environmental parameters and Dreissenid presence.
 
 
 Table 2. Descriptions of environmental characteristics used in this analysis identified as contributing to low, moderate, or high risk of Dreissenid invasion. Note that in some cases, limited categorical data representing ranges was available for variables.
@@ -131,7 +134,7 @@ Table 2. Descriptions of environmental characteristics used in this analysis ide
 threshold_defs = read.csv("data/env_thresholds.csv")
 
 ## Create formatted table to display thresholds
-kable(threshold_defs,col.names = c("Metric", "Low risk", "Moderate risk", "High risk", "Reference"),align = c("l","c","c","c","l")) %>% kable_styling(full_width=T) %>% row_spec(0, bold = T, font_size = 16,extra_css = "border-bottom: 1px solid;") %>% row_spec(6, extra_css = "border-bottom: 1px solid;")
+kable(threshold_defs,col.names = c("Metric", "Low risk", "Moderate risk", "High risk", "Reference"),align = c("l","c","c","c","l")) %>% kable_styling(full_width=T) %>% row_spec(0, bold = T, font_size = 16,extra_css = "border-bottom: 1px solid;") %>% row_spec(5, extra_css = "border-bottom: 1px solid;")
 
 ```
 
@@ -140,7 +143,7 @@ Using the data we compiled, we assigned each USACE reservoir as low, moderate, o
 
 
 Table 3. Risk classifications for USACE reservoirs based on environmental thresholds known to influence Dreissenid survival. 
-```{r}
+```{r, message=FALSE}
 
 ## Bring in data
 thresholds = read.csv("data/USACE_Reservoirs_Thresholds.csv")
@@ -161,28 +164,14 @@ for (i in 1:nrow(thresholds)) {
 }
 
 
-## Loop through max summer temperature to ID risk categories
-for (i in 1:nrow(thresholds)) {
-  if (thresholds$summer_max_temp[i] < 10 | thresholds$summer_max_temp[i] > 40) {
-    thresholds$max_sum_temp_threshold[i] = "Low"
-  } else if ((thresholds$summer_max_temp[i] >= 32 & thresholds$summer_max_temp[i] <= 40)){
-      thresholds$max_sum_temp_threshold[i]="Moderate"
-    } else if ((thresholds$summer_max_temp[i] >= 10 & thresholds$summer_max_temp[i] < 32)) {
-    thresholds$max_sum_temp_threshold[i] = "High"
-    } else {
-      thresholds$max_sum_temp_threshold[i] = "Out of range"
-  }
-}
-
-
 ## Loop through pH to ID risk categories
 for (i in 1:nrow(thresholds)) {
-  if (thresholds$avg_pH[i] < 6.8 | thresholds$avg_pH[i] > 9.5) {
+  if (thresholds$max_pH[i] < 6.8 | thresholds$max_pH[i] > 9.5) {
     thresholds$pH_threshold[i] = "Low"
-  } else if ((thresholds$avg_pH[i] >= 6.8 & thresholds$avg_pH[i] < 7.4) | 
-             (thresholds$avg_pH[i] > 8.7 & thresholds$avg_pH[i] <= 9.5)) {
+  } else if ((thresholds$max_pH[i] >= 6.8 & thresholds$max_pH[i] < 7.4) | 
+             (thresholds$max_pH[i] > 8.7 & thresholds$max_pH[i] <= 9.5)) {
       thresholds$pH_threshold[i] = "Moderate"
-  } else if (thresholds$avg_pH[i] >= 7.4 & thresholds$avg_pH[i] <= 8.7) {
+  } else if (thresholds$max_pH[i] >= 7.4 & thresholds$max_pH[i] <= 8.7) {
       thresholds$pH_threshold[i] = "High"
   } else {
       thresholds$pH_threshold[i] = "Out of range"
@@ -205,11 +194,11 @@ for (i in 1:nrow(thresholds)) {
 
 ## Loop through calcium to ID risk categories
 for (i in 1:nrow(thresholds)) {
-  if (thresholds$avg_Ca[i] < 9) {
+  if (thresholds$max_Ca[i] < 9) {
     thresholds$calcium_threshold[i] = "Low"
-  } else if (thresholds$avg_Ca[i] >= 9 & thresholds$avg_Ca[i] <= 15) {
+  } else if (thresholds$max_Ca[i] >= 9 & thresholds$max_Ca[i] <= 15) {
     thresholds$calcium_threshold[i] = "Moderate"
-  } else if (thresholds$avg_Ca[i] > 15) {
+  } else if (thresholds$max_Ca[i] > 15) {
     thresholds$calcium_threshold[i] = "High"
   } else {
       thresholds$calcium_threshold[i] = "Out of range"
@@ -232,12 +221,12 @@ for (i in 1:nrow(thresholds)) {
 
 ## Loop through risk categories to determine overall risk
 for (i in 1:nrow(thresholds)) {
-  if (sum(str_detect(thresholds[i,15:20], "Low")) > 0) {
+  if (sum(str_detect(thresholds[i,15:19], "Low")) > 0) {
     thresholds$overall_risk[i] = "Low"
-  } else if ((sum(str_detect(thresholds[i,15:20], "Low")) == 0) & 
-             (sum(str_detect(thresholds[i,15:20], "Moderate")) > 0)) {
+  } else if ((sum(str_detect(thresholds[i,15:19], "Low")) == 0) & 
+             (sum(str_detect(thresholds[i,15:19], "Moderate")) > 0)) {
       thresholds$overall_risk[i] = "Moderate"
-  } else if (sum(str_detect(thresholds[i,15:20], "High")) == 6) {
+  } else if (sum(str_detect(thresholds[i,15:19], "High")) == 5) {
      thresholds$overall_risk[i] = "High"
   } else {
     thresholds$overall_risk[i] = "ERROR"
@@ -246,12 +235,12 @@ for (i in 1:nrow(thresholds)) {
 
 ## Loop through risk categories to determine overall risk without considering distance to nearest infestation
 for (i in 1:nrow(thresholds)) {
-  if (sum(str_detect(thresholds[i,15:19], "Low")) > 0) {
+  if (sum(str_detect(thresholds[i,15:18], "Low")) > 0) {
     thresholds$overall_risk_nodist[i] = "Low"
-  } else if ((sum(str_detect(thresholds[i,15:19], "Low")) == 0) & 
-             (sum(str_detect(thresholds[i,15:19], "Moderate")) > 0)) {
+  } else if ((sum(str_detect(thresholds[i,15:18], "Low")) == 0) & 
+             (sum(str_detect(thresholds[i,15:18], "Moderate")) > 0)) {
       thresholds$overall_risk_nodist[i] = "Moderate"
-  } else if (sum(str_detect(thresholds[i,15:19], "High")) == 5) {
+  } else if (sum(str_detect(thresholds[i,15:18], "High")) == 4) {
      thresholds$overall_risk_nodist[i] = "High"
   } else {
     thresholds$overall_risk_nodist[i] = "ERROR"
@@ -271,7 +260,7 @@ for (i in 1:nrow(thresholds)) {
 counts=thresholds %>% group_by(overall_risk,overall_risk_nodist) %>% summarise(count = n())
 
 ###Risk table
-kable(thresholds[,c(1,15:23)],col.names=c("Reservoir","Mean summer temp risk threshold","Max summer temp risk threshold","pH risk threshold","Hardness risk threshold","Calcium risk threshold","Distance risk threshold","Overall risk", "Overall risk without distance","Infestation status"),align="c") %>% kable_styling()%>% 
+kable(thresholds[,c(1,15:22)],col.names=c("Reservoir","Mean summer temp risk threshold","pH risk threshold","Hardness risk threshold","Calcium risk threshold","Distance risk threshold","Overall risk", "Overall risk without distance","Infestation status"),align="c") %>% kable_styling()%>% 
  scroll_box(width = "1000px", height = "500px")%>% row_spec(0, bold = T, font_size = 16, align="c",extra_css = "border-bottom: 1px solid;")
 
 ```
@@ -279,7 +268,6 @@ kable(thresholds[,c(1,15:23)],col.names=c("Reservoir","Mean summer temp risk thr
 <br>
 <br>
 
-Since distance to infestation is likely to change over time as Dreissenids become established in new locations, we also assessed whether risk status changed if distance was not considered as a risk factor. Not considering distance resulted in 11 reservoirs with a low overall risk being elevated to high risk, and an additional 26 being elevated to moderate risk. Additionally, nine reservoirs that were initially considered moderate risk based on distance to infestation were elevated to high risk. 
 
 ```{r}
 ## Bind threshold data to geo data
@@ -300,7 +288,13 @@ ggplot() +
   theme_void()
 ```
 
-Figure 2. Locations of low, moderate, and high risk reservoirs for dreissenid infestation. Risk was based on mean summer temperatures, maximum summer temperatures, total water hardness, water pH, and distance to the nearest infestation
+Figure 2. Locations of low, moderate, and high risk reservoirs for dreissenid infestation. Risk was based on mean summer temperatures, total water hardness, water pH, and distance to the nearest infestation
+
+<br>
+<br>
+
+Since distance to infestation is likely to change over time as Dreissenids become established in new locations, we also assessed whether risk status changed if distance was not considered as a risk factor. Not considering distance resulted in 26 reservoirs with a low overall risk being elevated to high risk, and an additional 15 being elevated to moderate risk. Additionally, 19 reservoirs that were initially considered moderate risk based on distance to infestation were elevated to high risk.
+<br>
 
 ```{r}
 ## Re-level variables
@@ -319,7 +313,7 @@ ggplot() +
 
 ```
 
-Figure 3. Location of low, moderate, and high risk reservoirs for Dreissenid infestation when not considering distance to nearest infestation as a risk factor. Risk was based on mean summer temperature, maximum summer temperature, total water hardness, calcium concentration, and pH. Low risk reservoirs in Arkansas and North Carolina/Georgia are caused by potentially unsuitable water chemistry. One reservoir in Arizona is considered unsuitable because of summer temperatures.
+Figure 3. Location of low, moderate, and high risk reservoirs for Dreissenid infestation when not considering distance to nearest infestation as a risk factor. Risk was based on mean summer temperature, total water hardness, calcium concentration, and pH. Low risk reservoirs in Arkansas and North Carolina/Georgia are caused by potentially unsuitable water chemistry. One reservoir in Arizona is considered unsuitable because of summer temperatures.
 
 <br>
 <br>
@@ -332,10 +326,6 @@ Table 4. Number of Dreissenid infested and un-infested reservoirs characterized 
 ## Mean temperature
 mean_temp = thresholds %>% group_by(mean_sum_temp_threshold,infestation) %>% summarise(count = n()) %>%
   pivot_wider(names_from = mean_sum_temp_threshold, values_from = count) %>% mutate(var = "Mean temperature") %>% mutate(Moderate = NA)
-
-## Max temperature
-max_temp = thresholds %>% group_by(max_sum_temp_threshold,infestation) %>% summarise(count=n()) %>%
-  pivot_wider(names_from = max_sum_temp_threshold, values_from = count) %>% mutate(var = "Max temperature")
 
 ## pH
 pH = thresholds %>% group_by(pH_threshold,infestation) %>% summarise(count=n()) %>%
@@ -354,7 +344,7 @@ distance = thresholds %>% group_by(dist_threshold_km,infestation) %>% summarise(
   pivot_wider(names_from = dist_threshold_km, values_from = count) %>% mutate(var = "Distance to nearest infestation")
 
 ## Combine into a single table
-risk=rbind(mean_temp,max_temp,pH,hardness,calcium,distance)
+risk=rbind(mean_temp,pH,hardness,calcium,distance)
 
 ## Replace NAs with zeroes
 risk$Moderate=risk$Moderate %>% replace_na(0)
@@ -365,7 +355,7 @@ risk$High=risk$High %>% replace_na(0)
 risk=risk[,c(4,1,3,5,2)]
 
 ## Display results in table format
-kable(risk,col.names = c("Environmental variable","Infestation status","Low risk of invasion","Moderate risk of invasion", "High risk of invasion"),align = "c") %>% kable_styling() %>% collapse_rows(columns = 1,valign="top") %>% row_spec(0, bold = T, font_size = 16, align = "c",extra_css = "border-bottom: 1px solid;") %>% row_spec(10, extra_css = "border-bottom: 1px solid;") %>% column_spec(1,extra_css = "border-bottom: 1px solid;") %>% row_spec(c(2,4,6,8,10,12),extra_css = "border-bottom: 1px solid") %>% scroll_box(width = "1000px", height = "500px")
+kable(risk,col.names = c("Environmental variable","Infestation status","Low risk of invasion","Moderate risk of invasion", "High risk of invasion"),align = "c") %>% kable_styling() %>% collapse_rows(columns = 1,valign="top") %>% row_spec(0, bold = T, font_size = 16, align = "c",extra_css = "border-bottom: 1px solid;") %>% row_spec(10, extra_css = "border-bottom: 1px solid;") %>% column_spec(1,extra_css = "border-bottom: 1px solid;") %>% row_spec(c(2,4,6,8,10),extra_css = "border-bottom: 1px solid") %>% scroll_box(width = "1000px", height = "500px")
 ```
 <br>
 <br>
@@ -379,7 +369,7 @@ kable(risk,col.names = c("Environmental variable","Infestation status","Low risk
 ## Change data format to longer
 risk_long=risk %>% pivot_longer(cols=c("Low","Moderate","High"),names_to = "Risk_level")
 
-risk_long$order=c(1,2,3,1,2,3,1,2,3,1,2,3,1,2,3,1,2,3,1,2,3,1,2,3,1,2,3,1,2,3,1,2,3,1,2,3)
+risk_long$order=c(1,2,3,1,2,3,1,2,3,1,2,3,1,2,3,1,2,3,1,2,3,1,2,3,1,2,3,1,2,3)
 
 risk_long %>% ggplot(aes(fill=infestation,y=value,x=reorder(Risk_level,order)))+ geom_bar(position="dodge",stat="identity")+facet_wrap(~var,ncol=3,nrow=2)+labs(x="Risk level",y="Number of reservoirs")+ theme(text=element_text(size=50))+scale_fill_manual(values=c("navyblue","orchid"),name="Infestation status")
 
@@ -404,7 +394,7 @@ kable(overall_risk_pct,align = "c",col.names = c("Low risk (%)","Moderate risk (
 <br>
 <br>
 
-Table 6. Number of Dreissenid infested or un-infested reservoirs categorized as low, moderate, or high risk for Dreissenid invasion based on factors like mean and max summer temperature, pH, hardness, and distance to other infested water bodies.
+Table 6. Number of Dreissenid infested or un-infested reservoirs categorized as low, moderate, or high risk for Dreissenid invasion based on factors including mean summer temperature, pH, hardness, and distance to other infested water bodies.
 
 ```{r warning=FALSE, message=FALSE}
 
@@ -413,14 +403,17 @@ overall_risk = thresholds %>% group_by(overall_risk,infestation) %>% summarise(c
 
 overall_risk = overall_risk[,c(1,3,4,2)]
 
+overall_risk$Low=overall_risk$Low %>% replace_na(0)
+
 kable(overall_risk,align = "c",col.names = c("Infestation status","Low risk","Moderate risk", "High risk")) %>% kable_styling() %>% row_spec(0, bold = T, font_size = 16, align = "c",extra_css = "border-bottom: 1px solid;") %>% row_spec(2, extra_css = "border-bottom: 1px solid;")
 
 ```
 
+<br>
+<br>
 
 
-
-```{r warning=FALSE, message=FALSE,fig.height=15,fig.width=45}
+```{r warning=FALSE, message=FALSE,fig.height=25,fig.width=45}
 
 ## Graph low, moderate, and high risk according to infested and uninfested
 
@@ -436,35 +429,54 @@ Figure 5. Number of USACE reservoirs falling into each overall risk category tha
 
 <br>
 <br>
-
-Of the reservoirs considered to be at low risk of Dreissenid invasion, six reservoirs actually have Dreissenid infestations already (Table 7). These reservoirs fell into the low risk categories based on calcium, hardness, or pH levels considered lower than acceptable. However, it is important to remember that these estimates are based on interpolated data, and that water quality can vary within water bodies.
+Based on our risk categories, approximately 59% of high risk reservoirs have already recorded Dreissenid presence. Interestingly, approximately 27% of moderate risk reservoirs have also recorded Dreissenid presence. These reservoirs were ranked as moderate risk based on pH (n=14) or distance to nearest infestation (n=2). Most of the reservoirs limited by pH were located in the Arkansas River drainage or in the Black-Warrior Tombigbee system in Alabama. One pH-limited reservoir was located in Pennsylvania (Curwensville Lake) and the two distance limited reservoirs were in Iowa and North Dakota. With the exception of Curwensville Lake (Pennsylvania), Oliver Lake (Alabama), and Rathbun Lake (Iowa), all invaded moderate risk reservoirs have established Dreissenid populations, with some having been invaded as early as the 1990s. This could suggest that 1) more fine scale environmental data may be required to understand how intra-reservoir variation in environmental characteristics such as underlying geology could contribute to suitable conditions in reservoirs, or 2) that Dreissenids may be more tolerant of pH than expected. For the three remaining lakes where invasion status is unknown but positive Dreissenid records have occurred, it is possible that Dreissenids have been introduced to these reservoirs but have not been able to establish strong populations due to sub-optimal environmental conditions. For reservoirs with a moderate risk of invasion based on distance to the next nearest positive record, it is possible that Dreissenids were transported long distances by boaters given that few source populations were present nearby to fuel population expansion into these areas. Both lakes limited by distance were classified as high risk when excluding distance as a risk factor.
 
 <br>
 <br>
+```{r warning=FALSE, message=FALSE}
 
-Table 7. Reservoirs characterized as having an overall low risk of Dreissenid invasion despite being infested with Dreissenids.
+## Summarise moderate risk lakes
+## Load moderate reservoirs that are infested
+mod_infest = thresholds %>% filter((pH_threshold == "Moderate" | dist_threshold_km == "Moderate") & infest_status == 1)
 
-```{r}
-## Check out low risk lakes that are infested
-low_risk_infested = c(NA,NA)
-
-for (i in 1:nrow(thresholds)) {
-  if (sum(str_detect(thresholds[i,21], "Low")) > 0 & thresholds$infest_status[i] == 1){
-    low_risk_infested[i] = thresholds$name[i]
-  } else {
-  }
-}
-
-
-
-low_risk_infested_info = thresholds %>% filter(name %in% low_risk_infested[which(!is.na(low_risk_infested))])
-
-kable(low_risk_infested_info[,c(1,15:22)],col.names = c("Reservoir","Mean summer temp risk threshold","Max summer temp risk threshold","pH risk threshold","Hardness risk threshold","Calcium risk threshold","Distance risk threshold","Overall risk","Overall risk without distance"),align = "c") %>% kable_styling() %>% row_spec(0, bold = T, font_size = 16, align = "c",extra_css = "border-bottom: 1px solid;") %>% row_spec(6, extra_css = "border-bottom: 1px solid;")
+kable(mod_infest[,c(1,15:22)],col.names=c("Reservoir","Mean summer temp risk threshold","pH risk threshold","Hardness risk threshold","Calcium risk threshold","Distance risk threshold","Overall risk", "Overall risk without distance","Infestation status"),align="c") %>% kable_styling()%>% 
+ scroll_box(width = "1000px", height = "500px")%>% row_spec(0, bold = T, font_size = 16, align="c",extra_css = "border-bottom: 1px solid;")
 
 ```
 <br>
 <br>
 
+
+```{r warning=FALSE, message=FALSE}
+
+## Create empty column to store which variable is of moderate risk
+mod_infest$risk_var = NA
+
+## Assign risk variables
+mod_infest$risk_var[which(mod_infest$pH_threshold == "Moderate")] = "pH"
+mod_infest$risk_var[which(mod_infest$dist_threshold_km == "Moderate")] = "Distance to nearest infestation"
+
+res_mod_infest = res_raw %>% filter(name %in% mod_infest$name)
+
+## Get centers of lakes
+res_center = st_centroid(res_mod_infest) %>% 
+  select(name)
+
+res_center_mod = left_join(res_center, mod_infest, join_by(name))
+
+## Plot data
+ggplot() +
+  geom_polygon(data = state_map, aes(x = long,y = lat,group = group), inherit.aes = F, 
+     colour = 'black', fill = NA) +
+  geom_sf(data = res_center_mod, aes(color = as.factor(risk_var))) +
+  scale_color_manual(values = c("pH" = "navyblue", "Distance to nearest infestation" = "orchid"), 
+                     labels = c("pH" = "pH", "Distance to nearest infestation" = "Distance to nearest infestation"),
+                     name = "Dreissenid Presence") +
+  labs(title = "Dreissenid presence in moderate risk USACE reservoirs") +
+  theme_void()
+```
+<br>
+Figure 6. Location of USACE reservoirs with moderate invasion risk based on pH or distance to nearest infestation that have positive Dreissenid occurrences according to NAS (Benson et al. 2024).
 
 # Data analysis
 
@@ -704,7 +716,7 @@ Next we use the model to generate predictions. We will then create a confusion m
 ```{r, message=FALSE}
 confusionMatrix(table(predict(infest_gbm, newdata = train_split,
                               type="response") >= 0.5,
-                      train_split$infest_status == 1))
+                      train_split$infest_status == 1),positive = 'TRUE')
 ```
 
 Below is the RMSE for the training data
@@ -723,7 +735,7 @@ Below is a confusion matrix for the test data.
 
 confusionMatrix(table(predict(infest_gbm, newdata = test_split,
                               type="response") >= 0.5,
-                      test_split$infest_status == 1))
+                      test_split$infest_status == 1),positive = 'TRUE')
 ```
 
 Below is RMSE for the test data.
@@ -754,133 +766,239 @@ We used the 'randomForest' package in R to run this analysis (Liaw and Wiener, 2
 
 We obtained several outputs from the random forest classification, including:
 
-1) Out-of-bag error (OOB): overall error of classification (average % of time random forest incorrectly classifies records)
-2) False positive rate: Average percent of records categorized as having a Dreissenid infestation where Dreissenids are actually absent
-3) False negative rate: Average percent of records categorized as having no Dreissenid infestation where Dreissenids are actually present
-4) Importance: The average decrease in model accuracy if a given variable were dropped from the analysis
+1)  Accuracy: overall accuracy of classification (average % of time random forest correctly classifies records)
+2)  Confidence interval: The 95% confidence interval for the accuracy rate
+3)  No information rate: The accuracy of the model if we were to assign all reservoirs a value of zero without running a classification
+4)  P-value (Acc > NIR): Indicates whether your model accuracy is significantly higher than your no information rate, which is an indication that your model provides valuable information
+5)  McNemar's test p-value: This test statistic serves to test whether the counts of false positives in the model are significantly different from the counts of false negatives.If the p-value of the test is significant, than we can say relatively confidently that the model has a different proportion of false positives and false negatives. McNemar's test compares the relative difference in the relative proportion of error between the two rather than the difference in error itself
+6)  Sensitivity: The probability that an infested reservoir will be correctly classified as infested
+7)  Specificity: The probability that an uninfested reservoir will be correctly classified as uninfested
+8)  Pos pred value: The proportion of true positives captured by the total number of predicted positives
+9)  Neg pred value: The proportion of true negatives captured by the total number of predicted negatives
+10) Prevalence: The rate of all true positives in the whole population (The actual prevalence of infestations across reservoirs, regardless of classification)
+11) Detection rate: The rate of detected true positives in the whole population (how many infested reservoirs are categorized as infested)
+12) Detection prevalence: The rate of predicted positives in the whole population (how many reservoirs are predicted to be infested based on the classification)
+13) Balanced accuracy: The average of sensitivity and specificity scores
+14) Positive class: The class identified as indicating a 'positive' record (i.e., Dreissenid presence)
+15) Importance: The average decrease in model accuracy if a given variable were dropped from the analysis
 
-To run our random forest classification, we created 10000 trees using the default settings, including:
+To run our random forest classification, we created 1000 trees using the default settings, including:
 
-mtry: number of variables randomly sampled as candidates at each split (sqrt(p) by default, where p is the number of variables). Should we pursue RF further, we may want to experiment with different mtrys.
+mtry: number of variables randomly sampled as candidates at each split (sqrt(p) by default, where p is the number of variables).
 
 nodesize: minimum size of terminal nodes (1 by default)
+
+To account for highly correlated variables, which can affect variable importance scores in the random forest model, we identified any variables with a correlation coefficient higher than 0.8 and retained only one variable from each of these groups. For LULC, we retained data for 25 mile buffers over 50 mile buffers given their better performance in the logistic regressions. For water quality data, we retained maximum values over average values because they performed better when classifying reservoir invasion risk. For developed land cover, we summed development categories based on logistic regression performance
 
 ### Random forest with test and training datasets
 
 Below is a random forest model trained with the same training data given to the gradient boosted model. First the variable importance is displayed:
 
-```{r}
+```{r, fig.height = 15,fig.width=15}
 ## Random forest with training and test datasets
+
+## Sum development land covers
+train_split = train_split %>% 
+  mutate(dev_sum_25mi = perc_dev_openspace_25mi + perc_dev_lowintensity_25mi + perc_dev_medintensity_25mi + perc_dev_highintensity_25mi)
+
+test_split = test_split %>% 
+  mutate(dev_sum_25mi = perc_dev_openspace_25mi + perc_dev_lowintensity_25mi + perc_dev_medintensity_25mi + perc_dev_highintensity_25mi)
+
+## Remove highly correlated variables
+train_split = train_split %>% select(-c(surface_ar,perc_dev_openspace_50mi,
+                      perc_dev_medintensity_25mi,perc_dev_highintensity_25mi,
+                      perc_dev_lowintensity_50mi,perc_dev_medintensity_50mi,
+                      perc_dev_highintensity_50mi,perc_dev_openspace_25mi,
+                      perc_dev_lowintensity_25mi,perc_forest_50mi,
+                      perc_shrubscrub_50mi,perc_herbaceous_50mi,perc_haypasture_50mi,
+                      perc_crops_50mi,perc_wetland_50mi,fall_total_precip,
+                      avg_Ca,min_Ca,avg_pH,min_pH,spring_mean_temp,fall_mean_temp,
+                      winter_min_temp,spring_min_temp,fall_min_temp,winter_max_temp,
+                      spring_max_temp,fall_max_temp,winter_mean_dewp,spring_mean_dewp,
+                      winter_max_vpd,summer_min_temp,summer_max_temp,fall_mean_dewp,
+                      summer_mean_dewp,summer_max_vpd,fall_max_vpd,spring_min_vpd,
+                      fall_min_vpd,winter_mean_temp,winter_min_vpd,summer_min_vpd,
+                      spring_max_vpd,mean_ndci_fall,mean_ndci_spring,mean_ndci_winter,
+                      max_ndci_fall,max_ndci_fall,max_ndci_spring,max_ndci_summer,
+                      min_ndci_fall,min_ndci_spring,min_ndci_summer,min_ndci_winter))
+
+test_split = test_split %>% select(-c(surface_ar,perc_dev_openspace_50mi,
+                      perc_dev_medintensity_25mi,perc_dev_highintensity_25mi,
+                      perc_dev_lowintensity_50mi,perc_dev_medintensity_50mi,
+                      perc_dev_highintensity_50mi,perc_dev_openspace_25mi,
+                      perc_dev_lowintensity_25mi,perc_forest_50mi,
+                      perc_shrubscrub_50mi,perc_herbaceous_50mi,perc_haypasture_50mi,
+                      perc_crops_50mi,perc_wetland_50mi,fall_total_precip,
+                      avg_Ca,min_Ca,avg_pH,min_pH,spring_mean_temp,fall_mean_temp,
+                      winter_min_temp,spring_min_temp,fall_min_temp,winter_max_temp,
+                      spring_max_temp,fall_max_temp,winter_mean_dewp,spring_mean_dewp,
+                      winter_max_vpd,summer_min_temp,summer_max_temp,fall_mean_dewp,
+                      summer_mean_dewp,summer_max_vpd,fall_max_vpd,spring_min_vpd,
+                      fall_min_vpd,winter_mean_temp,winter_min_vpd,summer_min_vpd,
+                      spring_max_vpd,mean_ndci_fall,mean_ndci_spring,mean_ndci_winter,
+                      max_ndci_fall,max_ndci_fall,max_ndci_spring,max_ndci_summer,
+                      min_ndci_fall,min_ndci_spring,min_ndci_summer,min_ndci_winter))
 
 ## Train the model
 
 infest_rf = randomForest(as.factor(infest_status) ~ ., #writing the formula
                           data = train_split, #specifying training data to be used
-                          mtry = 9, #setting number of variables to randomly sample per each split
-                          ntree= 500, #setting number of trees
+                          mtry = sqrt(length(train_split)-1), #setting number of variables to randomly sample per each split
+                          ntree= 1000, #setting number of trees
                           na.action = na.omit, #specifying what to do with NAs
                           importance = TRUE #specifying importance of variables should be assessed
                           )
 
 ## Check variable importance
-variable_importance = importance(infest_rf)
-sorted_importance = data.frame(variable_importance[order(-variable_importance[, 1]), ])
-par(mar = c(10, 2, 2, 2)) # Set the margin on all sides 
-barplot(sorted_importance[, 1], names.arg = rownames(sorted_importance), las = 2, col = "blue", main = "Variable Importance",cex.names = 1)
+varImpPlot(infest_rf,sort = T,n.var = (length(train_split) - 1),main = "Variable importance plot")
 
 ```
 
-Then we will create a confusion matrix for the training data.
+Then we will create a confusion matrix for the training data and test its performance for classification:
 
 ```{r attr.output='style="max-height: 500px;"'}
 #training confusion matrix
 p_train <- predict(infest_rf, newdata = train_split)
-confusionMatrix(p_train, as.factor(train_split$infest_status))
+confusionMatrix(p_train, as.factor(train_split$infest_status),positive = '1')
 ```
 
-Followed by a confusion matrix for the test data.
+Above, we see that RF model is 100% accurate and the confusion matrix for the training data indicates that all Dreissenid presences and absences are correctly classified. The accuracy rate is statistically significantly higher than the no information rate, and the prevalence and detection rates mirror that of the actual population (~24% of reservoirs have positive records). Next, we will test our model with the testing dataset:
 
 ```{r attr.output='style="max-height: 500px;"'}
 #test confusion matrix
 p_test <- predict(infest_rf, newdata = test_split)
-confusionMatrix(p_test, as.factor(test_split$infest_status))
+confusionMatrix(p_test, as.factor(test_split$infest_status),positive = '1')
 
 #No RMSE for categorical outcomes in RF
 
 ```
 <br>
+Here, our RF model correctly classifies reservoirs based on Dreissenid presence approximately 81% of the time, although the balanced accuracy is lower (around 70%) because the model's sensitivity is poor. In other words, the model is not very good at accurately recognizing when Dreissenids are present, even though it is fairly good at predicting when Dreissenids are absent (as indicated by the high specificity rate). Furthermore, the accuracy rate is not significantly better than the no information rate, indicating that we could just assign all reservoirs as "absent" and still perform about as well as our model does now. The prevalence of Dreissenids in the test dataset is similar to the whole dataset, but the detection rate and detection prevalence are lower than the true prevalence. Our model may be limited by the "noise" of having so many variables included in it, so we decided to try reducing the number of variables by looking at only the 10 most important variables according to the mean decrease in accuracy metric.
 <br>
 <br>
 
 ## Random forest with reduced variables
 
-Here we will try the random forest using only the variables identified for risk thresholds.
-
 ```{r}
 ## Random forest with training and test datasets
 
-train_split_red = train_split %>% select(c(dist_to_infest_km,avg_Ca,avg_pH,max_hardness,summer_mean_temp,summer_max_temp,infest_status))
+train_split_red = train_split %>% select(c(dist_to_infest_km,max_Ca,summer_mean_temp,
+                                           winter_total_precip,perc_shrubscrub_25mi,
+                                           surface_area_km,perc_forest_25mi,max_pH,
+                                           perc_open_water_25mi,summer_total_precip,
+                                           infest_status))
 
-test_split_red = test_split %>% select(c(dist_to_infest_km,avg_Ca,avg_pH,max_hardness,summer_mean_temp,summer_max_temp,infest_status))
+test_split_red = test_split %>% select(c(dist_to_infest_km,max_Ca,summer_mean_temp,
+                                           winter_total_precip,perc_shrubscrub_25mi,
+                                           surface_area_km,perc_forest_25mi,max_pH,
+                                           perc_open_water_25mi,summer_total_precip,
+                                         infest_status))
 
 ## Train the model
-rf_risk_vars = randomForest(as.factor(infest_status) ~ ., #writing the formula
+rf_ten_vars = randomForest(as.factor(infest_status) ~ ., #writing the formula
                           data = train_split_red, #specifying training data to be used
-                          mtry = 2.44949, #setting number of variables to randomly sample per each split
-                          ntree= 500, #setting number of trees
+                          mtry = sqrt(length(train_split_red)-1), #setting number of variables to randomly sample per each split
+                          ntree= 1000, #setting number of trees
                           na.action = na.omit, #specifying what to do with NAs
                           importance = TRUE #specifying importance of variables should be assessed
                           )
 
 ## Check variable importance
-variable_importance = importance(rf_risk_vars)
-sorted_importance = data.frame(variable_importance[order(-variable_importance[, 1]), ])
-par(mar = c(10, 2, 2, 2)) # Set the margin on all sides 
-barplot(sorted_importance[, 1], names.arg = rownames(sorted_importance), las = 2, col = "blue", main = "Variable Importance",cex.names = 1)
+varImpPlot(rf_ten_vars,sort = T,main = "Variable importance plot")
 ```
+
 <br>
 <br>
-Then we will create a confusion matrix for the training data.
+Next, we will create a confusion matrix for the training data.
 
 ```{r attr.output='style="max-height: 500px;"'}
 #training confusion matrix
-p_train <- predict(rf_risk_vars, newdata = train_split_red)
-confusionMatrix(p_train, as.factor(train_split_red$infest_status))
+p_train <- predict(rf_ten_vars, newdata = train_split_red)
+confusionMatrix(p_train, as.factor(train_split_red$infest_status),positive = '1')
 ```
+Similarly to our RF model with all variables, this RF model is 100% accurate for the training data. Next, we'll see how it performs with the test data:
 
 ```{r attr.output='style="max-height: 500px;"'}
 #test confusion matrix
-p_test <- predict(rf_risk_vars, newdata = test_split_red)
-confusionMatrix(p_test, as.factor(test_split_red$infest_status))
+p_test <- predict(rf_ten_vars, newdata = test_split_red)
+confusionMatrix(p_test, as.factor(test_split_red$infest_status),positive = '1')
 
 #No RMSE for categorical outcomes in RF
 
 ```
-## Random forest with reduced variables no temperature
+Removing all but the 10 most influential variables improves the model slightly, but the model accuracy is still not significantly better than the no information rate. We will also try a random forest model containing just the variables used in our risk assessment to see if that improves the performance.
 
-Here we will try the random forest using only the variables identified for risk thresholds, but excluding temperature risk thresholds.
+<br>
+<br>
+
+## Random forest with risk variables
+
+Next, we will try the random forest using only the variables identified for risk thresholds to see if we can successfully classify reservoirs based on only a few environmental variables. Below, we have the variable importance plot:
 
 ```{r}
 ## Random forest with training and test datasets
 
-train_split_red_temp = train_split %>% select(c(dist_to_infest_km,avg_Ca,avg_pH,max_hardness,infest_status))
+train_split_risk = train_split %>% select(c(dist_to_infest_km,max_Ca,max_pH,max_hardness,summer_mean_temp,infest_status))
 
-test_split_red_temp = test_split %>% select(c(dist_to_infest_km,avg_Ca,avg_pH,max_hardness,infest_status))
+test_split_risk = test_split %>% select(c(dist_to_infest_km,max_Ca,max_pH,max_hardness,summer_mean_temp,infest_status))
+
+## Train the model
+rf_risk_vars = randomForest(as.factor(infest_status) ~ ., #writing the formula
+                          data = train_split_risk, #specifying training data to be used
+                          mtry = sqrt(length(train_split_risk)-1), #setting number of variables to randomly sample per each split
+                          ntree= 1000, #setting number of trees
+                          na.action = na.omit, #specifying what to do with NAs
+                          importance = TRUE #specifying importance of variables should be assessed
+                          )
+
+## Check variable importance
+varImpPlot(rf_risk_vars,sort = T,main = "Variable importance plot")
+```
+<br>
+<br>
+Next, we will create a confusion matrix for the training data.
+
+```{r attr.output='style="max-height: 500px;"'}
+#training confusion matrix
+p_train <- predict(rf_risk_vars, newdata = train_split_risk)
+confusionMatrix(p_train, as.factor(train_split_risk$infest_status),positive = '1')
+```
+
+Similarly to our RF model with all variables, this RF model is 100% accurate for the training data. Next, we'll see how it performs with the test data:
+
+```{r attr.output='style="max-height: 500px;"'}
+#test confusion matrix
+p_test <- predict(rf_risk_vars, newdata = test_split_risk)
+confusionMatrix(p_test, as.factor(test_split_risk$infest_status),positive = '1')
+
+#No RMSE for categorical outcomes in RF
+
+```
+Here, we can see that reducing the number of variables in our model incerased the accuracy (~83%) and the balanced accuracy (~74%) of our RF model. However, the model's sensitivity is still relatively poor and our accuracy is not significantly better than the no information rate. One factor that could be contributing to this is that the average temperatures of the reservoirs may not be particularly useful for distinguishing between reservoirs that are at risk of invasion. This is pretty clear in our risk assessment, because only a single reservoir is classified below high risk based on our thresholds. Hence, we decided to also try a Random Forest model without mean summer temperature.
+
+## Random forest with reduced variables no temperature
+
+Since we know we have limited information about duration of temperature stressors, we will also try the random forest using only the variables identified for risk thresholds, but excluding temperature risk thresholds.
+
+```{r}
+## Random forest with training and test datasets
+
+train_split_red_temp = train_split %>% select(c(dist_to_infest_km,max_Ca,max_pH,max_hardness,infest_status))
+
+test_split_red_temp = test_split %>% select(c(dist_to_infest_km,max_Ca,max_pH,max_hardness,infest_status))
 
 ## Train the model
 rf_risk_vars_temp = randomForest(as.factor(infest_status) ~ ., #writing the formula
                           data = train_split_red_temp, #specifying training data to be used
-                          mtry = 2, #setting number of variables to randomly sample per each split
+                          mtry = sqrt(length(train_split_red_temp)-1), #setting number of variables to randomly sample per each split
                           ntree= 500, #setting number of trees
                           na.action = na.omit, #specifying what to do with NAs
                           importance = TRUE #specifying importance of variables should be assessed
                           )
 
 ## Check variable importance
-variable_importance = importance(rf_risk_vars_temp)
-sorted_importance = data.frame(variable_importance[order(-variable_importance[, 1]), ])
-par(mar = c(10, 2, 2, 2)) # Set the margin on all sides 
-barplot(sorted_importance[, 1], names.arg = rownames(sorted_importance), las = 2, col = "blue", main = "Variable Importance",cex.names = 1)
+varImpPlot(rf_risk_vars_temp,sort = T,main = "Variable importance plot")
+
 ```
 
 <br>
@@ -890,17 +1008,152 @@ Then we will create a confusion matrix for the training data.
 ```{r attr.output='style="max-height: 500px;"'}
 #training confusion matrix
 p_train <- predict(rf_risk_vars_temp, newdata = train_split_red_temp)
-confusionMatrix(p_train, as.factor(train_split_red_temp$infest_status))
+confusionMatrix(p_train, as.factor(train_split_red_temp$infest_status),positive = '1')
 ```
+
+Like all the other models, the RF model performs perfectly on the training data.
 
 ```{r attr.output='style="max-height: 500px;"'}
 #test confusion matrix
 p_test <- predict(rf_risk_vars_temp, newdata = test_split_red_temp)
-confusionMatrix(p_test, as.factor(test_split_red_temp$infest_status))
+confusionMatrix(p_test, as.factor(test_split_red_temp$infest_status),positive = '1')
 
 #No RMSE for categorical outcomes in RF
 
 ```
+
+When we apply the new RF model to the test data, our accuracy improves even more to around 86%, with a balanced accuracy around 79%. Although the model's sensitivity is still relatively low, here we see that our RF model is significantly better than the no information rate, meaning it contains information that is actually useful.
+
+<br>
+<br>
+
+## Random forest with recursive feature elimination
+
+Just to see what happens, we can try recursive feature elimination to see how many and what variables will be included in our model.
+
+```{r}
+
+## Recursive feature elimination
+### install.packages("mlbench")
+
+## Set all categorical variables as factors
+ZQM[sapply(ZQM, is.character)] <- lapply(ZQM[sapply(ZQM, is.character)], 
+                                       as.factor)
+
+## Set infestation status and connectivity as categorical
+ZQM$infest_status=as.factor(ZQM$infest_status)
+ZQM$connectivity=as.factor(ZQM$connectivity)
+
+## Remove NAs
+ZQM=na.omit(ZQM)
+
+## Remove highly correlated variables
+ZQM = ZQM %>% select(-c(surface_ar,perc_dev_openspace_50mi,
+                      perc_dev_medintensity_25mi,perc_dev_highintensity_25mi,
+                      perc_dev_lowintensity_50mi,perc_dev_medintensity_50mi,
+                      perc_dev_highintensity_50mi,perc_dev_openspace_25mi,
+                      perc_dev_lowintensity_25mi,perc_forest_50mi,
+                      perc_shrubscrub_50mi,perc_herbaceous_50mi,perc_haypasture_50mi,
+                      perc_crops_50mi,perc_wetland_50mi,fall_total_precip,
+                      avg_Ca,min_Ca,avg_pH,min_pH,spring_mean_temp,fall_mean_temp,
+                      winter_min_temp,spring_min_temp,fall_min_temp,winter_max_temp,
+                      spring_max_temp,fall_max_temp,winter_mean_dewp,spring_mean_dewp,
+                      winter_max_vpd,summer_min_temp,summer_max_temp,fall_mean_dewp,
+                      summer_mean_dewp,summer_max_vpd,fall_max_vpd,spring_min_vpd,
+                      fall_min_vpd,winter_mean_temp,winter_min_vpd,summer_min_vpd,
+                      spring_max_vpd,mean_ndci_fall,mean_ndci_spring,mean_ndci_winter,
+                      max_ndci_fall,max_ndci_fall,max_ndci_spring,max_ndci_summer,
+                      min_ndci_fall,min_ndci_spring,min_ndci_summer,min_ndci_winter))
+
+## Select x variables
+env_vars = ZQM %>% select(-c(infest_status))
+
+library(mlbench)
+
+## Define control with a random forest selection function
+control = rfeControl(functions = rfFuncs, method = "cv", number = 10)
+
+## Run the RFE algorithm
+results = rfe(x = env_vars, y = ZQM$infest_status, rfeControl = control)
+
+## summarize the results
+print(results)
+
+## list the chosen features
+predictors(results)
+
+## plot the results
+plot(results, type=c("g", "o"))
+
+```
+
+<br>
+<br>
+
+The recursive elimination selects a model containing 16 variables from the dataset. We can try a random forest using these 16 variables to see how it performs in comparison to our other models.
+
+```{r}
+
+## Select variables identified by the recursive feature elimination
+ZQM_recursive = ZQM %>% select(c(dist_to_infest_km, max_Ca,surface_area_km, 
+                                 hardness_range, perc_shrubscrub_25mi, max_pH,
+                                 summer_mean_temp, perc_open_water_25mi,
+                                 winter_total_precip, num_connections, mean_elev_m,
+                                 summer_total_precip, perc_barren_25mi, connectivity,
+                                 perc_crops_25mi, perc_open_water_50mi,infest_status))
+
+## Set categorical data as factors
+ZQM_recursive$hardness_range = as.factor(ZQM_recursive$hardness_range)
+ZQM_recursive$connectivity = as.factor(ZQM_recursive$connectivity)
+
+## Define split parameters
+ZQM_recursive_split <- ZQM_recursive %>% 
+  initial_split(prop = 0.8, strata = infest_status)
+
+## Write split data to data frames
+train_split_rec <- training(ZQM_recursive_split)
+test_split_rec <- testing(ZQM_recursive_split)
+
+## Train the model
+rf_recursive = randomForest(as.factor(infest_status) ~ ., #writing the formula
+                          data = train_split_rec, #specifying training data to be used
+                          mtry = sqrt(length(train_split_rec)-1), #setting number of variables to randomly sample per each split
+                          ntree= 500, #setting number of trees
+                          na.action = na.omit, #specifying what to do with NAs
+                          importance = TRUE #specifying importance of variables should be assessed
+                          )
+
+## Check variable importance
+varImpPlot(rf_recursive,sort = T,main = "Variable importance plot")
+
+```
+<br>
+Similarly to past iterations, distance to nearest infestation and maximum calcium levels are still considered the most important variables in the model.
+
+```{r attr.output='style="max-height: 500px;"'}
+#training confusion matrix
+p_train <- predict(rf_recursive, newdata = train_split_rec)
+confusionMatrix(p_train, as.factor(train_split_rec$infest_status),positive = '1')
+```
+<br>
+Again, we see perfect performance with the training data.
+
+```{r attr.output='style="max-height: 500px;"'}
+#test confusion matrix
+p_test <- predict(rf_recursive, newdata = test_split_rec)
+confusionMatrix(p_test, as.factor(test_split_rec$infest_status),positive = '1')
+
+#No RMSE for categorical outcomes in RF
+
+```
+Here we see an accuracy around 85%, which is close to the cutoff for statistical significance for being significantly different from the no information rate. This model has the highest sensitivity so far, indicating it is getting better at predicting Dreissenid presence.
+
+<br>
+<br>
+
+# Conclusions (This should be expanded)
+
+Based on our analysis, the most limiting factor related to Dreissenid presence in USACE reservoirs seems to be the distance to the closest current Dreissenid infestation. This is particularly concerning because it suggests that Dreissenid spread may be more limited by dispersal than by environmental conditions, meaning that efforts to control the spread of Dreissenids are tantamount for controlling continued expansion of populations in the U.S. Beyond distance, maximum calcium was consistently also an important variable, which aligns with past research on environmental requirements of Dreissenids...
 
 <br>
 <br>
@@ -909,6 +1162,10 @@ confusionMatrix(p_test, as.factor(test_split_red_temp$infest_status))
 # References
 
 Benson, A. J., Raikow, D., Larson, J., Fusaro, A., Bogdanoff, A. K., and A. Elgin. (2024). *Dreissena polymorpha* (Pallas, 1771): U.S. Geological Survey, Nonindigenous Aquatic Species Database, Gainesville, Florida. https://nas.er.usgs.gov/queries/FactSheet.aspx?speciesID=5, Revision Date: 12/21/2023, Access Date: 7/29/2024
+
+Brownlee, J. (2019). How to calculate McNemar's test to compare two machine learning classifiers. https://machinelearningmastery.com/mcnemars-test-for-machine-learning/. Access Date: 12/3/2024 
+
+Brownlee, J. (2019). Feature selection with the Caret R Package. https://machinelearningmastery.com/feature-selection-with-the-caret-r-package/. Access Date: 12/03/2024.
 
 Carrillo, C. C., Charbonneau, B. R., Altman, S., Keele, J. A., Pucherelli, S. F., Passamaneck, Y. J., Murphy, A. C., and T. M. Swannack. (2023). Patterns of dreissenid mussel invasions in western US lakes within an integrated gravity model framework.
 
@@ -927,7 +1184,7 @@ Mishra, Sachidananda & Mishra, Deepak. (2012). Normalized difference chlorophyll
 
 Sorba, E. A., and D. A. Williamson. (1997). Zebra Mussel colonization potential in Manitoba, Canada. Water Quality Management Section, Manitoba Environment, Report No. 97-07.
 
-
+White, J. D., S. K. Hamilton, and O. Sarnelle. (2015). Heat-induced mass mortality of invasive Zebra Mussels (Dreissena polymorpha) at sublethal temperatures. Canadian Journal of Fisheries and Aquatic Sciences. 72(8):1221-1229. https://doi.org/10.1139/cjfas-2015-0064.
 
 
 
