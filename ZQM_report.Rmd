@@ -14,13 +14,11 @@ sansfont: Calibri
 ---
 
 # Purpose
-
 This document summarizes the exploratory analysis we have conducted so far to assess and predict Dreissenid (*i.e.*, *Dreissena polymorpha* and *Dreissena rostriformis bugensis*) invasion in USACE reservoirs.
 
 # Data exploration
 
 ## Data description
-
 A description of the datasets used can be found below:
 
 ```{r setup, include=FALSE}
@@ -466,6 +464,8 @@ Next, we used the data available on a national scale to try to better understand
 
 Before we used any predictive models to evaluate the risk of dreissenid mussel invasion, we wanted to understand how correlated different variables are. When variables are correlated they may not be suited for certain types of modeling, like logistic regression. In the below figures, bigger, darker blue dots indicate that two variables are positively correlated, while bigger, darker red dots indicate a negative correlation.
 
+Figure 6. A correlation plot showing how correlated different land-use variables are. All urban land-use categories are positively correlated, while forested land is negatively correlated with herbaceous cover and crop cover.
+
 ```{r}
 landuse <- ZQM_data %>% 
   select(perc_open_water_50mi, perc_dev_openspace_50mi: perc_wetland_50mi)
@@ -478,10 +478,11 @@ corrplot(m, method = "circle", type = "upper",
          diag=FALSE)
 ```
 
+Figure 7. A correlation plot showing how correlated different water chemistry and geology variables are. There are no stron correlations among these variables.
+
 ```{r}
 water_chem <- ZQM_data %>% 
-  mutate(mean_hardness = (min_hardness + max_hardness)/2) %>% 
-  select(avg_Ca,avg_pH, mean_hardness, c(perc_alluvial_25mi:perc_resid_volcanic_art_wat_25mi))
+  select(max_Ca, max_pH, max_hardness, c(perc_alluvial_25mi:perc_resid_volcanic_art_wat_25mi))
 
 m = cor(water_chem, use = "complete.obs")
 
@@ -489,6 +490,8 @@ corrplot(m, method = "circle", type = "upper",
          title = "correlation between water chemestry and geology variables",
          mar=c(0,0,2,0))
 ```
+
+Figure 8. A correlation plot showing how correlated different climate variables are. Temperatures are all very correlated.
 
 ```{r}
 climate_cor <- ZQM_data %>% 
@@ -501,6 +504,8 @@ corrplot(m, method = "circle", type = "upper",
          mar=c(0,0,2,0))
 ```
 
+Figure 9. A correlation plot showing how correlated seasonal NDCI variables are. Seasonal mean NDCI values are somewhat correlated with all NDCI variables.
+
 ```{r}
 ndci_cor <- ZQM_data %>% 
   select(mean_ndci_fall:max_ndci_winter)
@@ -511,6 +516,8 @@ corrplot(m, method = "circle", type = "upper",
          title = "Correlation between seasonal NDCI values",
          mar=c(0,0,2,0))
 ```
+
+Figure 10. A correlation plot showing how correlated surface area, distance to infestation, and visitation variables are. There are no strong correlations between the three variables.
 
 ```{r}
 rec <- ZQM_data %>% 
@@ -523,11 +530,12 @@ corrplot(m, method = "circle", type = "upper",
          mar=c(0,0,2,0))
 ```
 
+Figure 11. A correlation plot showing how correlated the variables that determine our risk categories are. There are no strong correlations among these variables
+
 ```{r}
-risks <- ZQM_data %>% 
-  mutate(mean_hardness = (min_hardness + max_hardness)/2) %>% 
-  select(dist_to_infest_km, summer_mean_temp, avg_Ca,
-         avg_pH, mean_hardness)
+risks <- ZQM_data %>%  
+  select(dist_to_infest_km, summer_mean_temp, max_Ca,
+         max_pH, max_hardness)
 
 m = cor(risks)
 
@@ -542,7 +550,7 @@ We ran several exploratory logistic regression models using binary infested (1) 
 
 We used the Akaike Information Criterion or AIC value to evaluate the quality of each model. The AIC value looks at the predictive power of the model as well as the number of inputs in each model. Generally, fewer inputs are better, because it reduces the chance of the model over fitting to the data. There is no goal AIC value, rather comparatively lower AIC values indicate a better quality model compared to models with higher AIC values.
 
-To assess the significance of each input we used the p value. The smaller the p vaue, the lower the chance that the input variable has no influence on the response variable. A p value of under 0.05 is indicated by a period, and anything smaller than that is indicated by one or more asterisks.
+To assess the significance of each input we used the p value. The smaller the p value, the lower the chance that the input variable has no influence on the response variable. A p value of under 0.05 is indicated by a period, and anything smaller than that is indicated by one or more asterisks.
 
 To evaluate the directionality of influence, we examined the coefficient value. The coefficient value indicates the change in log odds that the response variable will be 1 if the input variable increases by one unit.In our case, it indicates the log odds that a reservoir will be infested if the predictor variable is increased by one unit. Coefficients should only be evaluated if the model is of good quality and if the p value for the input value is very low.
 
@@ -606,7 +614,7 @@ dev_sum_25_logit <- glm(infest_status ~ ., data = dev_sum, family = "binomial")
 summary(dev_sum_25_logit)
 ```
 
-Notes: The model showed all variables to be significant. Percent barren land has a postive relationship with infestation, while all other variables have a negative relationship with infestation. Of all landuse logitistic regressions, this one has the lowest AIC score. <br> <br>
+Notes: The model showed all variables to be significant. Percent barren land has a postive relationship with infestation, while all other variables have a negative relationship with infestation. Of all landuse logistic regressions, this one has the lowest AIC score. <br> <br>
 
 ### Water chemistry and geology
 
@@ -615,8 +623,7 @@ Next we ran a logistic regression with various water chemistry and geology chara
 ```{r}
 #looking at geology and water chemistry
 water_chem <- ZQM_data %>% 
-  mutate(mean_hardness = (min_hardness + max_hardness)/2) %>% 
-  select(infest_status, avg_Ca,avg_pH, mean_hardness, c(perc_alluvial_25mi:perc_resid_volcanic_art_wat_25mi)) %>% 
+  select(infest_status, max_Ca, max_pH, max_hardness, c(perc_alluvial_25mi:perc_resid_volcanic_art_wat_25mi)) %>% 
   mutate(infest_status = as.factor(infest_status))
 
 #run the model
@@ -626,7 +633,7 @@ water_chem_logit <- glm(infest_status ~ ., data = water_chem, family = "binomial
 summary(water_chem_logit)
 ```
 
-Notes: This model seems to indicate that pH is a statistically significant predictor of infestation. Increases in pH are associated with slight increases in the risk of infestation. This model has a comparatively higher AIC score, indicating poor model performance. <br>
+Notes: This model seems to indicate that pH and calcium content are statistically significant predictor of infestation. Increases in pH and calcium are associated with increases in the risk of infestation. This model has a comparatively higher AIC score, indicating poor model performance. <br>
 <br>
 
 ### Climate
@@ -648,7 +655,7 @@ summary(climate_logit)
 
 Notes: This model shows many temperature variables as being significant, and also summer and winter precipitation. The AIC value for this model is comparatively lower than models we examined previously.
 
-We also ran a logistic regression with just total precipitation and summer mean temperature, to simplify correlated variables.
+We also ran a logistic regression with just total precipitation and summer mean temperature, to simplify the number of variables and eliminate highly correlated variables.
 
 ```{r}
 #looking at just mean temps
@@ -664,7 +671,9 @@ mean_temp_logit <- glm(infest_status ~., data = mean_temp, family = "binomial")
 summary(mean_temp_logit)
 ```
 
-Notes: When looking at total precipitation and mean summer temperature, only mean summer temperature is significant. This model has a higher AIC value compared to the previous climate model. <br> <br>
+Notes: When looking at total precipitation and mean summer temperature, only mean summer temperature is significant. This model has a higher AIC value compared to the previous climate model. 
+
+<br> <br>
 
 ### Size, recreation, and connectivity
 
@@ -693,9 +702,8 @@ Next we will run a logistic regression using all the variables we used to classi
 ```{r, message=FALSE, warning=FALSE}
 ## Looking at proximity to water bodies, connection status, etc
 risk_vars <- ZQM_data %>% 
-  mutate(mean_hardness = (min_hardness + max_hardness)/2) %>% 
-  select(infest_status, dist_to_infest_km, summer_mean_temp, avg_Ca,
-         avg_pH, mean_hardness) %>% 
+  select(infest_status, dist_to_infest_km, summer_mean_temp, max_Ca,
+         max_pH, max_hardness) %>% 
   mutate(infest_status = as.factor(infest_status))
 
 #run model
@@ -733,18 +741,17 @@ library(rsample) #for splitting data into test and training
 #prepare data for gradient boosted tree
 boosted_data <- ZQM_data %>% 
   mutate(dev_sum_25mi = perc_dev_openspace_25mi + perc_dev_lowintensity_25mi + perc_dev_medintensity_25mi + perc_dev_highintensity_25mi) %>% 
-  mutate(mean_hardness = (min_hardness + max_hardness)/2) %>% 
   mutate(total_precip = winter_total_precip + spring_total_precip + summer_total_precip + fall_total_precip) %>% 
   select(dist_to_infest_km: num_connections,
          perc_open_water_25mi, dev_sum_25mi, perc_barren_25mi:perc_crops_25mi,
          mean_elev_m:perc_resid_volcanic_art_wat_25mi,
-         mean_hardness,
+         max_hardness,
          total_precip,
          summer_mean_temp,
          mean_ndci_summer,
          mean_total_visits, 
-         avg_Ca,
-         avg_pH,
+         max_Ca,
+         max_pH,
          infest_status) %>% 
   mutate(connectivity = as.factor(connectivity)) %>% 
   mutate(infest_status = as.numeric(infest_status))
@@ -787,25 +794,25 @@ It is also possible to see the general relationship between the predictor variab
 plot(infest_gbm,i="dist_to_infest_km", type = "response")
 ```
 
-Figure 7. There is a negative relationship between infestation and the distance to the nearest infected body of water. Infestation is much more likely when other infestations are close.
+Figure 12. There is a negative relationship between infestation and the distance to the nearest infected body of water. Infestation is much more likely when other infestations are close.
 
 ```{r}
-plot(infest_gbm,i="avg_Ca", type = "response") 
+plot(infest_gbm,i="max_Ca", type = "response") 
 ```
 
-Figure 8: There is a positive relationship between observed average calcium levels and infestation status.
+Figure 13: There is a positive relationship between observed average calcium levels and infestation status.
 
 ```{r}
 plot(infest_gbm,i="surface_area_km", type = "response") 
 ```
 
-Figure 9. There is a positive relationship between infestation and the size of the reservoir. Larger reservoirs are more likely to be infested.
+Figure 14. There is a positive relationship between infestation and the size of the reservoir. Larger reservoirs are more likely to be infested.
 
 ```{r}
-plot(infest_gbm,i="mean_total_visits", type = "response") 
+plot(infest_gbm,i="summer_mean_temp", type = "response") 
 ```
 
-Figure 10. There is a positive relationship between average number of recreational visitors and infestation status.
+Figure 15. There is a positive relationship between summer mean temperatures and infestation status.
 
 <br> <br>
 
