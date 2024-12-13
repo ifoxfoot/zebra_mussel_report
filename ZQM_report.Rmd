@@ -14,8 +14,7 @@ sansfont: Calibri
 ---
 
 # Purpose
-This document summarizes the exploratory analysis we have conducted so far to assess and predict Dreissenid (*i.e.*, *Dreissena polymorpha* and *Dreissena rostriformis bugensis*) invasion in USACE reservoirs. 
-
+This document summarizes the exploratory analysis we have conducted so far to assess and predict Dreissenid (*i.e.*, *Dreissena polymorpha* and *Dreissena rostriformis bugensis*) invasion in USACE reservoirs.
 
 # Data exploration
 
@@ -40,21 +39,20 @@ library(stringr)
 library(caret)
 library(sf) 
 library(maps)
+library(corrplot)
 
 ## Set seed to ensure consistent results
 set.seed(123)
 ```
-
 
 ```{r attr.output='style="max-height: 500px;"',comment=''}
 ## Bring in metadata
 cat(readLines("data/README_USACE_Reservoirs.txt"), sep = '\n')
 ```
 
-
 ## Infestation patterns in USACE reservoirs
-Approximately 24% of the 352 reservoirs we examined have recorded Dreissenid presences according to USGS Non-indigenous Aquatic Species (NAS) data (Benson et al. 2024). The remaining 76% are currently considered un-infested (Table 1). Note that NAS data provides information on reports of Dreissenid presence only, and presence does not necessarily imply successful establishment. Absences are not reported. Note also that the absence of positive records in a state (e.g., Michigan) does not imply that Dreissenids are not present there, just that no Dreissenids have been recorded in USACE reservoirs within the state.
 
+Approximately 24% of the 352 reservoirs we examined have recorded Dreissenid presences according to USGS Non-indigenous Aquatic Species (NAS) data (Benson et al. 2024). The remaining 76% are currently considered un-infested (Table 1). Note that NAS data provides information on reports of Dreissenid presence only, and presence does not necessarily imply successful establishment. Absences are not reported. Note also that the absence of positive records in a state (e.g., Michigan) does not imply that Dreissenids are not present there, just that no Dreissenids have been recorded in USACE reservoirs within the state.
 
 ```{r warning=FALSE, message=FALSE}
 
@@ -86,10 +84,10 @@ ggplot() +
 
 Figure 1. Location of Dreissenid infested and un-infested USACE reservoirs (n=352). Infestation status was determined using USGS Non-indigenous Aquatic Species data (Benson et al. 2024).
 
-<br>
-<br>
+<br> <br>
 
 Table 1. Number of Dreissenid infested and un-infested USACE reservoirs (n=352). Infestation status was determined using USGS Non-indigenous Aquatic Species data (Benson et al. 2024).
+
 ```{r warning=FALSE, message=FALSE}
 
 ## Bring in data
@@ -118,16 +116,14 @@ kable(infest[,c(3,2)],col.names = c("Infestation status","Number of reservoirs")
 
 ```
 
-
-
 ## Environmental thresholds
 
 We attempted to predict and assess Dreissenid infestation in USACE reservoirs using environmental data and assessed invasion risk based on discrete environmental thresholds that have been identified in the literature as facilitating or preventing Dreissenid invasion (Doll 1997; Sorba and Williamson 1997; Cohen and Weinstein 1998; Cohen 2005; Carrillo et al. 2023). We used these environmental thresholds to define reservoir characteristics that may lead to low, moderate, or high risk of Dreissenid infestation (Table 2). Since not all literature reported the same thresholds, we chose the most conservative values such that we were more likely to overestimate than underestimate risk of infestation. For example, if one study defined low risk habitat as areas with a hardness < 45 mg/L and another as < 55 mg/L, we selected 45 mg/L as the maximum hardness describing low risk habitat, resulting in a wider moderate risk category.
 
 Initially, we included maximum summer temperature in our risk assessment, but we found that the risk categories identified were not necessarily a good representation of invasion risk, as a higher proportion of moderate-risk reservoirs were already invaded by Dreissenids compared to high risk reservoirs. While maximum temperature is likely a factor that does limit Dreissenid range, the duration of high temperature events may be an important factor that was missing from our assessment. Since we have no information about how long maximum summer temperatures occurred, it is difficult to assess their affect on mussels, as Dreissenids may be able to survive short-term exposure to high temperatures but could have higher mortality during longer high temperature events (White et al., 2015). Hence, we removed maximum temperature from our risk assessment but included it in our statistical analyses investigating the relationship between environmental parameters and Dreissenid presence.
 
-
 Table 2. Descriptions of environmental characteristics used in this analysis identified as contributing to low, moderate, or high risk of Dreissenid invasion. Note that in some cases, limited categorical data representing ranges was available for variables.
+
 ```{r warning=FALSE,message=FALSE,echo=FALSE}
 
 ## Bring in table of thresholds
@@ -138,12 +134,11 @@ kable(threshold_defs,col.names = c("Metric", "Low risk", "Moderate risk", "High 
 
 ```
 
+Using the data we compiled, we assigned each USACE reservoir as low, moderate, or high risk for each of the variables in Table 2 (Table 3). We then assessed how many reservoirs falling into each risk category were currently infested (Table 4, Figure 3) and assigned an overall risk for each reservoir by selecting the lowest risk category for any variable (Table 4, Table 5, Figure 3). Any reservoirs categorized as low risk for any of the variables were assigned a low overall risk, while reservoirs with no low risk variables and at least one moderate risk variable were assigned moderate risk. Reservoirs assigned high risk status for all variables were defined as having high overall risk.
 
-Using the data we compiled, we assigned each USACE reservoir as low, moderate, or high risk for each of the variables in Table 2 (Table 3). We then assessed how many reservoirs falling into each risk category were currently infested (Table 4, Figure 3) and assigned an overall risk for each reservoir by selecting the lowest risk category for any variable (Table 4, Table 5, Figure 3). Any reservoirs categorized as low risk for any of the variables were assigned a low overall risk, while reservoirs with no low risk variables and at least one moderate risk variable were assigned moderate risk. Reservoirs assigned high risk status for all variables were defined as having high overall risk. 
+Table 3. Risk classifications for USACE reservoirs based on environmental thresholds known to influence Dreissenid survival.
 
-
-Table 3. Risk classifications for USACE reservoirs based on environmental thresholds known to influence Dreissenid survival. 
-```{r, message=FALSE}
+```{r, message=FALSE, warning=FALSE}
 
 ## Bring in data
 thresholds = read.csv("data/USACE_Reservoirs_Thresholds.csv")
@@ -265,9 +260,7 @@ kable(thresholds[,c(1,15:22)],col.names=c("Reservoir","Mean summer temp risk thr
 
 ```
 
-<br>
-<br>
-
+<br> <br>
 
 ```{r}
 ## Bind threshold data to geo data
@@ -298,7 +291,7 @@ Since distance to infestation is likely to change over time as Dreissenids becom
 
 ```{r}
 ## Re-level variables
-thresh_geo$overall_risk_dist <- factor(thresh_geo$overall_risk_nodist, 
+thresh_geo$overall_risk_nodist <- factor(thresh_geo$overall_risk_nodist, 
                                   levels = c("High", "Moderate", "Low"))
 
 ## Plot graph
@@ -315,10 +308,10 @@ ggplot() +
 
 Figure 3. Location of low, moderate, and high risk reservoirs for Dreissenid infestation when not considering distance to nearest infestation as a risk factor. Risk was based on mean summer temperature, total water hardness, calcium concentration, and pH. Low risk reservoirs in Arkansas and North Carolina/Georgia are caused by potentially unsuitable water chemistry. One reservoir in Arizona is considered unsuitable because of summer temperatures.
 
-<br>
-<br>
+<br> <br>
 
 Table 4. Number of Dreissenid infested and un-infested reservoirs characterized as low, moderate, or high risk of invasion based on environmental characteristics.
+
 ```{r warning=FALSE,message=FALSE}
 
 ## Examine how risk category for each variable relates to infestation status
@@ -357,10 +350,8 @@ risk=risk[,c(4,1,3,5,2)]
 ## Display results in table format
 kable(risk,col.names = c("Environmental variable","Infestation status","Low risk of invasion","Moderate risk of invasion", "High risk of invasion"),align = "c") %>% kable_styling() %>% collapse_rows(columns = 1,valign="top") %>% row_spec(0, bold = T, font_size = 16, align = "c",extra_css = "border-bottom: 1px solid;") %>% row_spec(10, extra_css = "border-bottom: 1px solid;") %>% column_spec(1,extra_css = "border-bottom: 1px solid;") %>% row_spec(c(2,4,6,8,10),extra_css = "border-bottom: 1px solid") %>% scroll_box(width = "1000px", height = "500px")
 ```
-<br>
-<br>
-<br>
 
+<br> <br> <br>
 
 ```{r warning=FALSE, message=FALSE,fig.height=30,fig.width=45}
 
@@ -374,12 +365,13 @@ risk_long$order=c(1,2,3,1,2,3,1,2,3,1,2,3,1,2,3,1,2,3,1,2,3,1,2,3,1,2,3,1,2,3)
 risk_long %>% ggplot(aes(fill=infestation,y=value,x=reorder(Risk_level,order)))+ geom_bar(position="dodge",stat="identity")+facet_wrap(~var,ncol=3,nrow=2)+labs(x="Risk level",y="Number of reservoirs")+ theme(text=element_text(size=50))+scale_fill_manual(values=c("navyblue","orchid"),name="Infestation status")
 
 ```
+
 Figure 4. Number of Dreissenid infested and un-infested USACE reservoirs falling into each risk category (low, moderate, or high) for specified variables.
 
-<br>
-<br>
+<br> <br>
 
 Table 5. Percent of USACE reservoirs falling into each risk category for Dreissenid infestation.
+
 ```{r warning=FALSE, message=FALSE}
 
 ## Summarise percent of reservoirs in each risk category
@@ -391,8 +383,7 @@ kable(overall_risk_pct,align = "c",col.names = c("Low risk (%)","Moderate risk (
 
 ```
 
-<br>
-<br>
+<br> <br>
 
 Table 6. Number of Dreissenid infested or un-infested reservoirs categorized as low, moderate, or high risk for Dreissenid invasion based on factors including mean summer temperature, pH, hardness, and distance to other infested water bodies.
 
@@ -409,9 +400,9 @@ kable(overall_risk,align = "c",col.names = c("Infestation status","Low risk","Mo
 
 ```
 
-<br>
-<br>
 
+<br>
+<br>
 
 ```{r warning=FALSE, message=FALSE,fig.height=25,fig.width=45}
 
@@ -425,6 +416,7 @@ overall_risk_long$order = c(1,2,3,1,2,3)
 overall_risk_long %>% ggplot(aes(fill = infestation,y = value,x = reorder(Risk_level,order))) + geom_bar(position = "dodge",stat = "identity") + labs(x = "Risk level", y = "Number of reservoirs") + theme(text = element_text(size = 80)) + scale_fill_manual(values = c("navyblue","orchid"),name = "Infestation status")
 
 ```
+
 Figure 5. Number of USACE reservoirs falling into each overall risk category that are infested or un-infested with Dreissenids.
 
 <br>
@@ -438,6 +430,7 @@ Based on our risk categories, approximately 59% of high risk reservoirs have alr
 ## Summarise moderate risk lakes
 ## Load moderate reservoirs that are infested
 mod_infest = thresholds %>% filter((pH_threshold == "Moderate" | dist_threshold_km == "Moderate") & infest_status == 1)
+
 
 kable(mod_infest[,c(1,15:22)],col.names=c("Reservoir","Mean summer temp risk threshold","pH risk threshold","Hardness risk threshold","Calcium risk threshold","Distance risk threshold","Overall risk", "Overall risk without distance","Infestation status"),align="c") %>% kable_styling()%>% 
  scroll_box(width = "1000px", height = "500px")%>% row_spec(0, bold = T, font_size = 16, align="c",extra_css = "border-bottom: 1px solid;")
@@ -475,6 +468,7 @@ ggplot() +
   labs(title = "Dreissenid presence in moderate risk USACE reservoirs") +
   theme_void()
 ```
+
 <br>
 Figure 6. Location of USACE reservoirs with moderate invasion risk based on pH or distance to nearest infestation that have positive Dreissenid occurrences according to NAS (Benson et al. 2024).
 
@@ -482,25 +476,113 @@ Figure 6. Location of USACE reservoirs with moderate invasion risk based on pH o
 
 Next, we used the data available on a national scale to try to better understand how different environmental and social factors may be related to Dreissenid presence in USACE reservoirs. We explored several analysis methods to investigate our questions, which are outlined below:
 
-<br>
-<br>
+<br> <br>
+
+## Correlation Matrices
+
+Before we used any predictive models to evaluate the risk of dreissenid mussel invasion, we wanted to understand how correlated different variables are. When variables are correlated they may not be suited for certain types of modeling, like logistic regression. In the below figures, bigger, darker blue dots indicate that two variables are positively correlated, while bigger, darker red dots indicate a negative correlation.
+
+Figure 6. A correlation plot showing how correlated different land-use variables are. All urban land-use categories are positively correlated, while forested land is negatively correlated with herbaceous cover and crop cover.
+
+```{r}
+landuse <- ZQM_data %>% 
+  select(perc_open_water_50mi, perc_dev_openspace_50mi: perc_wetland_50mi)
+
+m = cor(landuse, use = "complete.obs")
+
+corrplot(m, method = "circle", type = "upper",
+         title = "correlation between land-use categories", 
+         mar=c(0,0,2,0),
+         diag=FALSE)
+```
+
+Figure 7. A correlation plot showing how correlated different water chemistry and geology variables are. There are no stron correlations among these variables.
+
+```{r}
+water_chem <- ZQM_data %>% 
+  select(max_Ca, max_pH, max_hardness, c(perc_alluvial_25mi:perc_resid_volcanic_art_wat_25mi))
+
+m = cor(water_chem, use = "complete.obs")
+
+corrplot(m, method = "circle", type = "upper", 
+         title = "correlation between water chemestry and geology variables",
+         mar=c(0,0,2,0))
+```
+
+Figure 8. A correlation plot showing how correlated different climate variables are. Temperatures are all very correlated.
+
+```{r}
+climate_cor <- ZQM_data %>% 
+  select(winter_total_precip:fall_max_temp)
+
+m = cor(climate_cor, use = "complete.obs")
+
+corrplot(m, method = "circle", type = "upper", 
+         title = "Correlation between climate variables",
+         mar=c(0,0,2,0))
+```
+
+Figure 9. A correlation plot showing how correlated seasonal NDCI variables are. Seasonal mean NDCI values are somewhat correlated with all NDCI variables.
+
+```{r}
+ndci_cor <- ZQM_data %>% 
+  select(mean_ndci_fall:max_ndci_winter)
+
+m = cor(ndci_cor, use = "complete.obs")
+
+corrplot(m, method = "circle", type = "upper", 
+         title = "Correlation between seasonal NDCI values",
+         mar=c(0,0,2,0))
+```
+
+Figure 10. A correlation plot showing how correlated surface area, distance to infestation, and visitation variables are. There are no strong correlations between the three variables.
+
+```{r}
+rec <- ZQM_data %>% 
+  select(dist_to_infest_km, surface_area_km, mean_total_visits)
+
+m = cor(rec, use = "complete.obs")
+
+corrplot(m, method = "circle", type = "upper", 
+         title = "Correlation between visits, surface area, and distance to infestation",
+         mar=c(0,0,2,0))
+```
+
+Figure 11. A correlation plot showing how correlated the variables that determine our risk categories are. There are no strong correlations among these variables
+
+```{r}
+risks <- ZQM_data %>%  
+  select(dist_to_infest_km, summer_mean_temp, max_Ca,
+         max_pH, max_hardness)
+
+m = cor(risks)
+
+corrplot(m, method = "circle", type = "upper", 
+         title = "Correlation between main risk variables",
+         mar=c(0,0,2,0))
+```
 
 ## Logistic regressions
 
-We ran several exploratory logistic regression models using binary infested (1) versus not infested (0) as the response variable. We used different predictor variables in each logistic regression. Our goal was not to predict Dreissenid infestation, but rather to identify significant environmental predictors and the directionality of their influence.
+We ran several exploratory logistic regression models using binary infested (1) versus not infested (0) as the outcome variable. We used different input variables in each logistic regression. Our goal was not to predict Dreissenid infestation, but rather to identify significant environmental predictors and the directionality of their influence.
 
-<br>
-<br>
+We used the Akaike Information Criterion or AIC value to evaluate the quality of each model. The AIC value looks at the predictive power of the model as well as the number of inputs in each model. Generally, fewer inputs are better, because it reduces the chance of the model over fitting to the data. There is no goal AIC value, rather comparatively lower AIC values indicate a better quality model compared to models with higher AIC values.
 
-### Landcover logistic regression
+To assess the significance of each input we used the p value. The smaller the p value, the lower the chance that the input variable has no influence on the response variable. A p value of under 0.05 is indicated by a period, and anything smaller than that is indicated by one or more asterisks.
 
-We ran a logistic regression with the proportion of land use categories within a 25 and 50 mile buffer of each reservoir as predictor variables. Data was from the NLCD.
+To evaluate the directionality of influence, we examined the coefficient value. The coefficient value indicates the change in log odds that the response variable will be 1 if the input variable increases by one unit.In our case, it indicates the log odds that a reservoir will be infested if the predictor variable is increased by one unit. Coefficients should only be evaluated if the model is of good quality and if the p value for the input value is very low.
+
+<br> <br>
+
+### Landcover
+
+We ran a logistic regression with the percent of land dedicated to each land-use category within a 25 and 50 mile buffer of each reservoir as input variables. Data was from the NLCD.
 
 First we ran the model with a 50 mile buffer for each land cover category.
 
 Note that the model did not converge with percent perennial snow and ice included in the logistic regression.
 
-Below is the model summary:
+Below is the model summary. The coefficient name (or input variable name) is in the first column on the left. The next column over, called `Estimate`, contains the coefficient value with tells you the directionality of influence that the coefficient has on the outcome variable. The column with the p value is on the far right. the AIC value is stated below the table output.
 
 ```{r}
 #some data cleaning
@@ -517,7 +599,7 @@ summary(landcover_50_logit)
 
 Notes: In this model, there are no significant predictors of infestation.
 
-We then ran the model with a 25 mile buffer. Note that the model did not converge with percent open water or percent snow and ice variables included.
+We then ran the model with a 25 mile buffer. Note that the model also did not converge with percent open water or percent snow and ice variables included.
 
 ```{r}
 #some data cleaning
@@ -532,7 +614,7 @@ landcover_25_logit <- glm(infest_status ~ ., data = landcover_25, family = "bino
 summary(landcover_25_logit)
 ```
 
-Notes: When we ran the model with a 25 mile buffer, it showed forest cover, shrub cover, herbaceous cover, percent crop cover, and percent wetland cover to be significant predictors of infestation. It did not show any development categories to be significant. Both models had weak predictive power, indicating they were not very accurate.
+Notes: When we ran the model with a 25 mile buffer, it showed barren land, forest cover, shrub cover, herbaceous cover, hay pasture cover, crop cover, and wetland cover to be significant predictors of infestation. Barren land has a slight positive influence on infestation, while all other significant variables are negatively associated with infestation. The model did not show any development categories to be significant. While this model does have a lower AIC value than the previous model, it still is not very low so this model is not the best quality.
 
 In the next model, we aggregate all development classifications into a single category, again using the 25 mile buffer.
 
@@ -550,19 +632,16 @@ dev_sum_25_logit <- glm(infest_status ~ ., data = dev_sum, family = "binomial")
 summary(dev_sum_25_logit)
 ```
 
-Notes: The model showed all variables except percent barren land to be significant. Development is weakly significant. Overall the model has poor predictive power.
-<br>
-<br>
+Notes: The model showed all variables to be significant. Percent barren land has a postive relationship with infestation, while all other variables have a negative relationship with infestation. Of all landuse logistic regressions, this one has the lowest AIC score. <br> <br>
 
 ### Water chemistry and geology
 
-Next we ran a logistic regression with various water chemistry and geology characteristics as predictors. For hardness, we used the midpoint of the given range of values. Below is the model summary.
+Next we ran a logistic regression with various water chemistry and geology characteristics as predictors. Note that many water chemistry variables are likely correlated, which is not ideal for logistic regression. This model is for exploratory purposes only. For hardness, we used the midpoint of the given range of values. Below is the model summary.
 
 ```{r}
 #looking at geology and water chemistry
 water_chem <- ZQM_data %>% 
-  mutate(mean_hardness = (min_hardness + max_hardness)/2) %>% 
-  select(infest_status, avg_Ca,avg_pH, mean_hardness, c(perc_alluvial_25mi:perc_resid_volcanic_art_wat_25mi)) %>% 
+  select(infest_status, max_Ca, max_pH, max_hardness, c(perc_alluvial_25mi:perc_resid_volcanic_art_wat_25mi)) %>% 
   mutate(infest_status = as.factor(infest_status))
 
 #run the model
@@ -572,8 +651,7 @@ water_chem_logit <- glm(infest_status ~ ., data = water_chem, family = "binomial
 summary(water_chem_logit)
 ```
 
-Notes: This model seems to indicate that pH is a statistically significant predictors of infestation. This model has a comparatively higher AIC score, indicating poor model performance.
-<br>
+Notes: This model seems to indicate that pH and calcium content are statistically significant predictor of infestation. Increases in pH and calcium are associated with increases in the risk of infestation. This model has a comparatively higher AIC score, indicating poor model performance. <br>
 <br>
 
 ### Climate
@@ -592,14 +670,16 @@ climate_logit <- glm(infest_status ~., data = climate, family = "binomial")
 #print model summary
 summary(climate_logit)
 ```
-Note: This model shows spring temperature as being potentially important.
 
-We also ran a logistic regression with just seasonal mean temperatures as predictor variables.
+Notes: This model shows many temperature variables as being significant, and also summer and winter precipitation. The AIC value for this model is comparatively lower than models we examined previously.
+
+We also ran a logistic regression with just total precipitation and summer mean temperature, to simplify the number of variables and eliminate highly correlated variables.
 
 ```{r}
 #looking at just mean temps
 mean_temp <- climate %>% 
-  select(infest_status, spring_mean_temp, summer_mean_temp, fall_mean_temp, winter_mean_temp) %>% 
+  mutate(total_precip = winter_total_precip + spring_total_precip + summer_total_precip + fall_total_precip) %>% 
+  select(infest_status, total_precip, summer_mean_temp) %>% 
   mutate(infest_status = as.factor(infest_status))
 
 #run model with mean temps
@@ -609,9 +689,9 @@ mean_temp_logit <- glm(infest_status ~., data = mean_temp, family = "binomial")
 summary(mean_temp_logit)
 ```
 
-Note: When looking at just mean temps, spring temps are no longer most significant and they do not have particularly strong influence on infestation. In this model, winter temps have a significant negative relationship with infestation.
-<br>
-<br>
+Notes: When looking at total precipitation and mean summer temperature, only mean summer temperature is significant. This model has a higher AIC value compared to the previous climate model. 
+
+<br> <br>
 
 ### Size, recreation, and connectivity
 
@@ -631,13 +711,43 @@ connect_logit <- glm(infest_status ~., data = connectivity, family = "binomial")
 summary(connect_logit)
 ```
 
-Notes: distance to infestation is the most significant predictor, and surface area is also significant. Increasing distance has a negative relationship with infestation while increasing surface area has a slight positive relationship with infestation. This model has lowest AIC so far, indicating better predictive power when compared with the previous logistic regression models.
+Notes: distance to infestation is the most significant predictor, and surface area is also significant. Increasing distance has a negative relationship with infestation while increasing surface area has a slight positive relationship with infestation. Connectivity is also significant. Reservoirs with a lock and dam are more likely to be infested than those with just a dam or no connection. This model has lowest AIC so far, indicating better predictive power when compared with the previous logistic regression models.
+
+### Previously identified risk variables
+
+Next we will run a logistic regression using all the variables we used to classify risk. These are variables that have been identified as potentially limiting to dreissenid mussels in the literature. The variables are distance to infestation, mean hardness, average calcium content, average pH and mean summer temperature.
+
+```{r, message=FALSE, warning=FALSE}
+## Looking at proximity to water bodies, connection status, etc
+risk_vars <- ZQM_data %>% 
+  select(infest_status, dist_to_infest_km, summer_mean_temp, max_Ca,
+         max_pH, max_hardness) %>% 
+  mutate(infest_status = as.factor(infest_status))
+
+#run model
+risk_logit <- glm(infest_status ~., data = risk_vars, family = "binomial")
+
+#print model summary
+summary(risk_logit)
+```
+
+Notes: Distance to infestation is significant and negatively associated with infestation. Mean summer temperature is significant and positively associated with infestation. All other input variables are not significant. This model has a low AIC, but it is slightly higher than the size, recreation, and connectivity logistic model.
 
 ## Gradient boosted model
 
-A gradient boosted model is a flexible machine learning algorithm that is immune to issues caused by multicollinearity. It works by combining multiple weak models (think small decision trees) into one strong model.
+A gradient boosted model (GBM) is a flexible machine learning algorithm that is immune to issues caused by multicollinearity. It works by combining multiple weak models (think small decision trees) into one strong model.
 
-In this instance, we split the data into training data to train the model and testing data to test the model. Since there is so little data, taking even a few observations away to later test the model on may impact the model training.
+In this instance, we split the data into training data to train the model and testing data to test the model. Since there is so little data, taking even a few observations away to later test the model may impact the model training.
+
+We made the following modifications to the data to reduce the number of inputs.
+
+-   We used percent land-use within 25 miles and dropped percent land-use within 50 miles. We also combined all development categories into one category.
+
+-   We calculated total annual precipitation and used that and summer mean temperature from the climate data.
+
+-   We used only summer mean NDCI
+
+-   We used average calcium, average pH, and average hardness as water chemistry inputs
 
 Below is a summary of the model, trained using the training data.
 
@@ -648,8 +758,19 @@ library(rsample) #for splitting data into test and training
 
 #prepare data for gradient boosted tree
 boosted_data <- ZQM_data %>% 
-  select(dist_to_infest_km:infest_status) %>% 
-  select(-hardness_range) %>% 
+  mutate(dev_sum_25mi = perc_dev_openspace_25mi + perc_dev_lowintensity_25mi + perc_dev_medintensity_25mi + perc_dev_highintensity_25mi) %>% 
+  mutate(total_precip = winter_total_precip + spring_total_precip + summer_total_precip + fall_total_precip) %>% 
+  select(dist_to_infest_km: num_connections,
+         perc_open_water_25mi, dev_sum_25mi, perc_barren_25mi:perc_crops_25mi,
+         mean_elev_m:perc_resid_volcanic_art_wat_25mi,
+         max_hardness,
+         total_precip,
+         summer_mean_temp,
+         mean_ndci_summer,
+         mean_total_visits, 
+         max_Ca,
+         max_pH,
+         infest_status) %>% 
   mutate(connectivity = as.factor(connectivity)) %>% 
   mutate(infest_status = as.numeric(infest_status))
 
@@ -675,51 +796,63 @@ infest_gbm = gbm(infest_status ~ .,
 infest_gbm
 ```
 
-Below is a list of the most influential variables, according to the gradient boosted model.
+Below is a list of the most influential variables, according to the gradient boosted model. Variables with a higher `rel.inf`are more influential in the model outcome. Note that the influence value is meant to be interpreted relative to other influence values. Even though predictions generated using GBM models are not affected by multicollinearity, if two variables are highly correlated, the influence will be split between them.
 
 ```{r warning=FALSE,message=FALSE,fig.height=20,fig.width=20,attr.output='style="max-height: 500px;"'}
 #the model summary
 summary(infest_gbm, plotit = F)
 ```
 
-Note: Distance to infestation is vastly more important than other predictors. 
+Note: Distance to infestation is vastly more influential than other predictors.
 
-It is also possible to see the general relationship between the predictor variables and the outcome variable. Below are two figures showing the relationship between infestation on the Y axis and the predictor variable on the X axis.
+It is also possible to see the general relationship between the predictor variables and the outcome variable. Below are figures showing the relationship between infestation on the Y axis (recall 0 indicates not infested and 1 indicates infested) and the predictor variable on the X axis. Note the different axis values between plots.
 
 ```{r}
 #plot some rough graphs showing relationship between infestation and key vars
-plot(infest_gbm,i="dist_to_infest_km")
+plot(infest_gbm,i="dist_to_infest_km", type = "response")
 ```
 
-Figure 7. There is a negative relationship between infestation and the distance to the nearest infected body of water. Infestation is much more likely when other infestations are close.
+Figure 12. There is a negative relationship between infestation and the distance to the nearest infected body of water. Infestation is much more likely when other infestations are close.
 
 ```{r}
-plot(infest_gbm,i="surface_area_km") 
+plot(infest_gbm,i="max_Ca", type = "response") 
 ```
 
-Figure 8. There is a positive relationship between infestation and the size of the reservoir. Larger reservoirs are more likely to be infested.
+Figure 13: There is a positive relationship between observed average calcium levels and infestation status.
 
 ```{r}
-plot(infest_gbm,i="mean_total_visits") 
+plot(infest_gbm,i="surface_area_km", type = "response") 
 ```
-Figure 9. There is a positive relationship between average number of recreational visitors and infestation status.
+
+Figure 14. There is a positive relationship between infestation and the size of the reservoir. Larger reservoirs are more likely to be infested.
 
 ```{r}
-plot(infest_gbm,i="max_Ca") 
+plot(infest_gbm,i="summer_mean_temp", type = "response") 
 ```
-Figure 10: There is a positive relationship between maximum observed median calcium levels and infestation status.
-<br>
-<br>
 
-Next we use the model to generate predictions. We will then create a confusion matrix and calculate RMSE. Below is a confusion matrix for the training data.
+Figure 15. There is a positive relationship between summer mean temperatures and infestation status.
+
+<br> <br>
+
+Next we use the model to generate predictions. We will then create a confusion matrix and calculate RMSE. A confusion matrix shows the number of true negatives (top left value), false negatives (top right), false positives (bottom left), and true positives (bottom right). RMSE stands for Root Mean Squared Error. A smaller RMSE indicates the model is more accurate.
+
+Below is a confusion matrix for the training data.
 
 ```{r, message=FALSE}
-confusionMatrix(table(predict(infest_gbm, newdata = train_split,
-                              type="response") >= 0.5,
-                      train_split$infest_status == 1),positive = 'TRUE')
+#generating predictions for training data
+train_preds <- predict.gbm(infest_gbm, newdata = train_split, type="response")
+
+#converting to 0,1 outcome
+train_pred_class <- ifelse(train_preds > 0.5, 1, 0)
+
+#creating confusion matrix
+confusionMatrix(as.factor(train_pred_class), 
+                as.factor(train_split$infest_status),
+                positive = '1')
 ```
 
 Below is the RMSE for the training data
+
 ```{r, message=FALSE}
 #create predictions
 predictions_training <- predict(infest_gbm, newdata = train_split, type = "response")
@@ -732,10 +865,13 @@ Below is a confusion matrix for the test data.
 
 ```{r, message=FALSE}
 #testing model
+test_preds <- predict.gbm(infest_gbm, newdata = test_split, type="response")
 
-confusionMatrix(table(predict(infest_gbm, newdata = test_split,
-                              type="response") >= 0.5,
-                      test_split$infest_status == 1),positive = 'TRUE')
+test_pred_class <- ifelse(test_preds > 0.5, 1, 0)
+
+confusionMatrix(as.factor(test_pred_class), 
+                as.factor(test_split$infest_status),
+                positive = '1')
 ```
 
 Below is RMSE for the test data.
@@ -750,13 +886,11 @@ Metrics::rmse(predictions_test, test_split$infest_status)
 
 The shows some signs of overfitting. It "predicts" infestation with perfect accuracy when given the training data, but it is less accurate when predicting infestation with new data. Still, the model is reasonably effective and may be further improved with model tuning.
 
-<br>
-<br>
+<br> <br>
 
+## Random forest analysis
 
-## Random forest analysis 
-
-Random forest classification is a type of machine learning that functions similarly to classification and regression tree analysis (CART). Random forest analysis does not assume linearity, normality, or homoscedasticity and is less sensitive to spatial autocorrelation and multicollinearity. 
+Random forest classification is a type of machine learning that functions similarly to classification and regression tree analysis (CART). Random forest analysis does not assume linearity, normality, or homoscedasticity and is less sensitive to spatial autocorrelation and multicollinearity.
 
 Random forest classification works by generating a series of bootstrapped trees that have low correlation with one another and averaging the results of these individual trees across a "forest" of many trees to prevent overfitting. Individual trees are created by randomly selecting a subset of all possible variables and using them to build and test a classification scheme using randomly selected training (64%) and test data (36%). Since each tree uses a random subset of variables and different training and test data, they should be relatively different from one another.
 
@@ -765,6 +899,7 @@ We can evaluate the performance of the random forest classification by obtaining
 We used the 'randomForest' package in R to run this analysis (Liaw and Wiener, 2002).
 
 We obtained several outputs from the random forest classification, including:
+
 
 1)  Accuracy: overall accuracy of classification (average % of time random forest correctly classifies records)
 2)  Confidence interval: The 95% confidence interval for the accuracy rate
@@ -872,6 +1007,7 @@ confusionMatrix(p_test, as.factor(test_split$infest_status),positive = '1')
 #No RMSE for categorical outcomes in RF
 
 ```
+
 <br>
 Here, our RF model correctly classifies reservoirs based on Dreissenid presence approximately 81% of the time, although the balanced accuracy is lower (around 70%) because the model's sensitivity is poor. In other words, the model is not very good at accurately recognizing when Dreissenids are present, even though it is fairly good at predicting when Dreissenids are absent (as indicated by the high specificity rate). Furthermore, the accuracy rate is not significantly better than the no information rate, indicating that we could just assign all reservoirs as "absent" and still perform about as well as our model does now. The prevalence of Dreissenids in the test dataset is similar to the whole dataset, but the detection rate and detection prevalence are lower than the true prevalence. Our model may be limited by the "noise" of having so many variables included in it, so we decided to try reducing the number of variables by looking at only the 10 most important variables according to the mean decrease in accuracy metric.
 <br>
@@ -954,6 +1090,7 @@ rf_risk_vars = randomForest(as.factor(infest_status) ~ ., #writing the formula
 ## Check variable importance
 varImpPlot(rf_risk_vars,sort = T,main = "Variable importance plot")
 ```
+
 <br>
 <br>
 Next, we will create a confusion matrix for the training data.
@@ -974,6 +1111,7 @@ confusionMatrix(p_test, as.factor(test_split_risk$infest_status),positive = '1')
 #No RMSE for categorical outcomes in RF
 
 ```
+
 Here, we can see that reducing the number of variables in our model incerased the accuracy (~83%) and the balanced accuracy (~74%) of our RF model. However, the model's sensitivity is still relatively poor and our accuracy is not significantly better than the no information rate. One factor that could be contributing to this is that the average temperatures of the reservoirs may not be particularly useful for distinguishing between reservoirs that are at risk of invasion. This is pretty clear in our risk assessment, because only a single reservoir is classified below high risk based on our thresholds. Hence, we decided to also try a Random Forest model without mean summer temperature.
 
 ## Random forest with reduced variables no temperature
@@ -1001,9 +1139,7 @@ varImpPlot(rf_risk_vars_temp,sort = T,main = "Variable importance plot")
 
 ```
 
-<br>
-<br>
-Then we will create a confusion matrix for the training data.
+<br> <br> Then we will create a confusion matrix for the training data.
 
 ```{r attr.output='style="max-height: 500px;"'}
 #training confusion matrix
@@ -1155,11 +1291,10 @@ Here we see an accuracy around 85%, which is close to the cutoff for statistical
 
 Based on our analysis, the most limiting factor related to Dreissenid presence in USACE reservoirs seems to be the distance to the closest current Dreissenid infestation. This is particularly concerning because it suggests that Dreissenid spread may be more limited by dispersal than by environmental conditions, meaning that efforts to control the spread of Dreissenids are tantamount for controlling continued expansion of populations in the U.S. Beyond distance, maximum calcium was consistently also an important variable, which aligns with past research on environmental requirements of Dreissenids...
 
-<br>
-<br>
-<br>
+<br> <br> <br>
 
 # References
+
 
 Benson, A. J., Raikow, D., Larson, J., Fusaro, A., Bogdanoff, A. K., and A. Elgin. (2024). *Dreissena polymorpha* (Pallas, 1771): U.S. Geological Survey, Nonindigenous Aquatic Species Database, Gainesville, Florida. https://nas.er.usgs.gov/queries/FactSheet.aspx?speciesID=5, Revision Date: 12/21/2023, Access Date: 7/29/2024
 
@@ -1185,9 +1320,4 @@ Mishra, Sachidananda & Mishra, Deepak. (2012). Normalized difference chlorophyll
 Sorba, E. A., and D. A. Williamson. (1997). Zebra Mussel colonization potential in Manitoba, Canada. Water Quality Management Section, Manitoba Environment, Report No. 97-07.
 
 White, J. D., S. K. Hamilton, and O. Sarnelle. (2015). Heat-induced mass mortality of invasive Zebra Mussels (Dreissena polymorpha) at sublethal temperatures. Canadian Journal of Fisheries and Aquatic Sciences. 72(8):1221-1229. https://doi.org/10.1139/cjfas-2015-0064.
-
-
-
-
-
 
