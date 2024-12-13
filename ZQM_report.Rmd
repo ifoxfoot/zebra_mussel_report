@@ -816,14 +816,21 @@ Figure 15. There is a positive relationship between summer mean temperatures and
 
 <br> <br>
 
-Next we use the model to generate predictions. We will then create a confusion matrix and calculate RMSE. A confusion matrix shows the number of true negatives (top left value), false negatives (top right), false positives (bottom right), and true positives (bottom right). RMSE stands for Root Mean Squared Error. A smaller RMSE indicates the model is more accurate.
+Next we use the model to generate predictions. We will then create a confusion matrix and calculate RMSE. A confusion matrix shows the number of true negatives (top left value), false negatives (top right), false positives (bottom left), and true positives (bottom right). RMSE stands for Root Mean Squared Error. A smaller RMSE indicates the model is more accurate.
 
 Below is a confusion matrix for the training data.
 
 ```{r, message=FALSE}
-confusionMatrix(table(predict(infest_gbm, newdata = train_split,
-                              type="response") >= 0.5,
-                      train_split$infest_status == 1))
+#generating predictions for training data
+train_preds <- predict.gbm(infest_gbm, newdata = train_split, type="response")
+
+#converting to 0,1 outcome
+train_pred_class <- ifelse(train_preds > 0.5, 1, 0)
+
+#creating confusion matrix
+confusionMatrix(as.factor(train_pred_class), 
+                as.factor(train_split$infest_status),
+                positive = '1')
 ```
 
 Below is the RMSE for the training data
@@ -840,10 +847,13 @@ Below is a confusion matrix for the test data.
 
 ```{r, message=FALSE}
 #testing model
+test_preds <- predict.gbm(infest_gbm, newdata = test_split, type="response")
 
-confusionMatrix(table(predict(infest_gbm, newdata = test_split,
-                              type="response") >= 0.5,
-                      test_split$infest_status == 1))
+test_pred_class <- ifelse(test_preds > 0.5, 1, 0)
+
+confusionMatrix(as.factor(test_pred_class), 
+                as.factor(test_split$infest_status),
+                positive = '1')
 ```
 
 Below is RMSE for the test data.
@@ -942,9 +952,9 @@ Here we will try the random forest using only the variables identified for risk 
 ```{r}
 ## Random forest with training and test datasets
 
-train_split_red = train_split %>% select(c(dist_to_infest_km,avg_Ca,avg_pH,mean_hardness,summer_mean_temp,infest_status))
+train_split_red = train_split %>% select(c(dist_to_infest_km,max_Ca,max_pH,max_hardness,summer_mean_temp,infest_status))
 
-test_split_red = test_split %>% select(c(dist_to_infest_km,avg_Ca,avg_pH,mean_hardness,summer_mean_temp,infest_status))
+test_split_red = test_split %>% select(c(dist_to_infest_km,max_Ca,max_pH,max_hardness,summer_mean_temp,infest_status))
 
 ## Train the model
 rf_risk_vars = randomForest(as.factor(infest_status) ~ ., #writing the formula
@@ -986,9 +996,9 @@ Here we will try the random forest using only the variables identified for risk 
 ```{r}
 ## Random forest with training and test datasets
 
-train_split_red_temp = train_split %>% select(c(dist_to_infest_km,avg_Ca,avg_pH,mean_hardness,infest_status))
+train_split_red_temp = train_split %>% select(c(dist_to_infest_km,max_Ca,max_pH,max_hardness,infest_status))
 
-test_split_red_temp = test_split %>% select(c(dist_to_infest_km,avg_Ca,avg_pH,mean_hardness,infest_status))
+test_split_red_temp = test_split %>% select(c(dist_to_infest_km,max_Ca,max_pH,max_hardness,infest_status))
 
 ## Train the model
 rf_risk_vars_temp = randomForest(as.factor(infest_status) ~ ., #writing the formula
