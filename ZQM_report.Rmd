@@ -254,6 +254,9 @@ for (i in 1:nrow(thresholds)) {
 
 counts=thresholds %>% group_by(overall_risk,overall_risk_nodist) %>% summarise(count = n())
 
+#save thresholds with lake names
+#write.csv(thresholds, "risk_thresholds_per_res.csv")
+
 ###Risk table
 kable(thresholds[,c(1,15:22)],col.names=c("Reservoir","Mean summer temp risk threshold","pH risk threshold","Hardness risk threshold","Calcium risk threshold","Distance risk threshold","Overall risk", "Overall risk without distance","Infestation status"),align="c") %>% kable_styling()%>% 
  scroll_box(width = "1000px", height = "500px")%>% row_spec(0, bold = T, font_size = 16, align="c",extra_css = "border-bottom: 1px solid;")
@@ -511,7 +514,6 @@ corrplot(m, method = "circle", type = "upper",
          title = "correlation between water chemistry and geology variables",
          mar=c(0,0,2,0))
 ```
-
 <br>
 **Figure 8.** A correlation plot showing how correlated different water chemistry and geology variables are. There are no strong correlations among these variables.
 
@@ -812,7 +814,9 @@ Below is a list of the most influential variables, according to the gradient boo
 
 ```{r warning=FALSE,message=FALSE,fig.height=20,fig.width=20,attr.output='style="max-height: 500px;"'}
 #the model summary
-summary(infest_gbm, plotit = F)
+summary(infest_gbm, plotit = F, 
+        #method = permutation.test.gbm
+        )
 ```
 
 Note: Distance to infestation is vastly more influential than other predictors.
@@ -955,6 +959,9 @@ infest_rf = randomForest(as.factor(infest_status) ~ ., #writing the formula
                           importance = TRUE #specifying importance of variables should be assessed
                           )
 
+# var_imp_all <- importance(infest_rf, type = 1)
+# write.csv(var_imp_all, "var_imp_all.csv")
+
 ## Check variable importance
 varImpPlot(infest_rf,sort = T,n.var = (length(train_split) - 1),main = "Variable importance plot")
 
@@ -1010,6 +1017,9 @@ rf_ten_vars = randomForest(as.factor(infest_status) ~ ., #writing the formula
                           importance = TRUE #specifying importance of variables should be assessed
                           )
 
+# var_imp_top_ten <- importance(rf_ten_vars, type = 1)
+# write.csv(var_imp_top_ten, "var_imp_top_ten.csv")
+
 ## Check variable importance
 varImpPlot(rf_ten_vars,sort = T,main = "Variable importance plot")
 ```
@@ -1059,6 +1069,9 @@ rf_risk_vars = randomForest(as.factor(infest_status) ~ ., #writing the formula
                           importance = TRUE #specifying importance of variables should be assessed
                           )
 
+# var_imp_risk_vars <- importance(rf_risk_vars, type = 1)
+# write.csv(var_imp_risk_vars, "var_imp_risk_vars.csv")
+
 ## Check variable importance
 varImpPlot(rf_risk_vars,sort = T,main = "Variable importance plot")
 ```
@@ -1107,8 +1120,13 @@ rf_risk_vars_temp = randomForest(as.factor(infest_status) ~ ., #writing the form
                           importance = TRUE #specifying importance of variables should be assessed
                           )
 
+#saving var importance for plot
+# var_imp_risk_vars_no_temp <- importance(rf_risk_vars_temp, type = 1)
+# write.csv(var_imp_risk_vars_no_temp, "var_imp_risk_vars_no_temp.csv")
+
 ## Check variable importance
 varImpPlot(rf_risk_vars_temp,sort = T,main = "Variable importance plot")
+
 
 ```
 <br>
@@ -1139,7 +1157,7 @@ When we apply the new RF model to the test data, our accuracy improves to around
 
 # Conclusions
 
-Based on our analysis, the most limiting factor related to Dreissenid presence in USACE reservoirs seems to be the distance to the closest current Dreissenid infestation. This is particularly concerning because it suggests that Dreissenid spread may be more limited by dispersal than by environmental conditions, meaning that efforts to control the spread of Dreissenids are tantamount for controlling continued expansion of populations in the U.S. Beyond distance, maximum calcium was consistently an important variable, which aligns with past research on environmental requirements of Dreissenids. Our risk analysis suggests that just over 50% of USACE reservoirs may be considered high risk for Dreissenid infestation, with an additional 21% considered moderate risk. Efforts to prevent the continued spread of Dreissenids could benefit from additional focus on preventing transport of veligers or mussels between nearby lakes via recreational activities. Furthermore, collection of more fine scale water quality data could help refine our risk estimates, particularly for lakes that exhibit higher intra-reservoir variation in waer quality due to geology or other factors.
+Based on our analysis, the most limiting factor related to Dreissenid presence in USACE reservoirs seems to be the distance to the closest current Dreissenid infestation. This is particularly concerning because it suggests that Dreissenid spread may be more limited by dispersal than by environmental conditions, meaning that efforts to control the spread of Dreissenids are tantamount for controlling continued expansion of populations in the U.S. Beyond distance, maximum calcium was consistently an important variable, which aligns with past research on environmental requirements of Dreissenids. Our risk analysis suggests that just over 50% of USACE reservoirs may be considered high risk for Dreissenid infestation, with an additional 21% considered moderate risk. Efforts to prevent the continued spread of Dreissenids could benefit from additional focus on preventing transport of veligers or mussels between nearby lakes via recreational activities. Furthermore, collection of more fine scale water quality data could help refine our risk estimates, particularly for lakes that exhibit higher intra-reservoir variation in water quality due to geology or other factors.
 
 
 <br> <br> <br>

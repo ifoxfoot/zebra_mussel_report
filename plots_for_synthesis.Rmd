@@ -1,0 +1,138 @@
+---
+title: "Figures for Summary Report"
+author: "Iris Foxfoot"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(sf)
+library(ggplot2)
+library(dplyr)
+library(cowplot)
+```
+
+# making map
+
+```{r}
+#get state data
+state_map = map_data("state")
+
+#load USACE reservoir data
+res_raw = read_sf("USACE_Reservoirs/USACE_Reservoirs_Final.shp") %>% 
+  janitor::clean_names() %>% 
+  sf::st_make_valid() 
+
+#load risk thresholds
+thresholds <- read.csv("risk_thresholds_per_res.csv")
+
+#get centers of lakes
+res_center = st_centroid(res_raw) %>% 
+  select(infest_sta, name) %>% 
+  mutate(infest_status = as.factor(infest_sta))
+
+#bind threshold data to geo data
+thresh_geo <- left_join(res_center, thresholds, join_by(name))
+
+#re-level factors
+thresh_geo$overall_risk <- factor(thresh_geo$overall_risk, 
+                                  levels = c("High", "Moderate", "Low"))
+
+#re-level variables
+thresh_geo$overall_risk_nodist <- factor(thresh_geo$overall_risk_nodist, 
+                                  levels = c("High", "Moderate", "Low"))
+
+#function to get legend
+get_legend_35 <- function(plot) {
+  # return all legend candidates
+  legends <- get_plot_component(plot, "guide-box", return_all = TRUE)
+  # find non-zero legends
+  nonzero <- vapply(legends, \(x) !inherits(x, "zeroGrob"), TRUE)
+  idx <- which(nonzero)
+  # return first non-zero legend if exists, and otherwise first element (which will be a zeroGrob) 
+  if (length(idx) > 0) {
+    return(legends[[idx[1]]])
+  } else {
+    return(legends[[1]])
+  }
+}
+
+#plot graph for legend
+legend <- ggplot() +
+  geom_polygon(data = state_map, 
+               aes(x=long,y=lat,group=group), 
+               inherit.aes=F, 
+               colour='black', 
+               fill=NA) +
+  geom_sf(data = thresh_geo, aes(color = overall_risk_nodist)) +
+  scale_color_manual(values = c("Low" = "#44AA99", 
+                                "Moderate" = "#DDCC77", 
+                                "High" = "#882255"),
+                     name = "Risk of Dreissenid Infestation") +
+  labs(title = "Dreissenid invasion risk in USACE reservoirs without\nconsidering distance to nearest invasion") +
+  theme_void()
+
+#use function to pull legend from legend plot
+c_legend <- get_legend_35(legend + 
+                         guides(color = guide_legend(nrow = 3)) + 
+    theme(legend.position = "right"))
+
+#plot graph without distance
+no_dist <- ggplot() +
+  geom_polygon(data = state_map, 
+               aes(x=long,y=lat,group=group), 
+               inherit.aes=F, 
+               colour='black', 
+               fill=NA) +
+  geom_sf(data = thresh_geo, aes(color = overall_risk_nodist)) +
+  scale_color_manual(values = c("Low" = "#44AA99", 
+                                "Moderate" = "#DDCC77", 
+                                "High" = "#882255"),
+                     name = "Risk of Dreissenid Infestation") +
+  labs(title = "Without Distance") +
+  theme_void() +
+  theme(legend.position = "none")
+
+no_dist
+
+
+#plot data with distance
+dist <- ggplot() +
+  geom_polygon(data = state_map, 
+               aes(x=long,y=lat,group=group), 
+               inherit.aes=F, 
+               colour='black', 
+               fill=NA) +
+  geom_sf(data = thresh_geo, aes(color = overall_risk)) +
+  scale_color_manual(values = c("Low" = "#44AA99", 
+                                "Moderate" = "#DDCC77", 
+                                "High" = "#882255"),
+                     name = "Risk of Dreissenid infestation") +
+  labs(title = "With Distance") +
+  theme_void()  +
+  theme(legend.position = "none")
+
+dist
+
+# Combine the plots into a 2x2 grid
+combined_plot <- plot_grid(dist, no_dist,
+                           ncol = 1,  # Number of columns
+                           align = "v",  # Align vertically
+                           labels = "AUTO")
+
+# Combine plots with the legend
+final_plot <- plot_grid(combined_plot, c_legend, ncol = 2, rel_widths = c(3, 2))
+
+# Print the combined plot
+ggdraw(final_plot)
+
+ggsave("figures/risk_maps_threshold.png", plot = final_plot, width = 7, height = 4)
+```
+
+# Making plot
+
+```{r}
+
+```
+
