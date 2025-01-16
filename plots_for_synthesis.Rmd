@@ -133,6 +133,18 @@ ggsave("figures/risk_maps_threshold.png", plot = final_plot, width = 7, height =
 # Making plot
 
 ```{r}
+ten_var_importance <- read.csv("var_imp_top_ten.csv")
 
+ggplot(data = ten_var_importance, aes(x = reorder(X, -MeanDecreaseAccuracy),
+                                      y = MeanDecreaseAccuracy,
+                                      fill = X == "dist_to_infest_km")) +
+  labs(y = "Mean Decrease\nIn Accuracy") +
+  geom_bar(stat = "identity") +
+  scale_fill_manual(values = c("blue", "red")) +  
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        axis.title.x = element_blank(),
+        axis.title.y = element_text(angle = 0, vjust = .5),
+        legend.position = "none") 
 ```
 
