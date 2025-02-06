@@ -1,7 +1,8 @@
 DATA OVERVIEW:
 
 The data contained in these files were generated from multiple sources:
-- USACE reservoir GIS data was sourced from a shapefile downloaded from https://geospatial-usace.opendata.arcgis.com/datasets/03e322d7e89b48a9b48e9c3f4bcaf29e/explore 
+- USACE reservoir GIS data was sourced from a shapefile downloaded from https://geospatial-usace.opendata.arcgis.com/datasets/03e322d7e89b48a9b48e9c3f4bcaf29e/explore
+- recreational visitor information was provided by The U.S. Army Corps of Engineers Institute for Water Resources.
 - Dreissenid presenece/absence data was derived from USGS NAS data downloaded from https://nas.er.usgs.gov/queries/CollectionInfo.aspx?SpeciesID=3118
 - Land use data was sourced from the NLCD land cover for 2021 downloaded from https://www.mrlc.gov/data?f%5B0%5D=category%3ALand%20Cover and USACE reservoir shapefiles.
 - Surface geology data was generated using USGS surficial geology data downloaded from https://pubs.usgs.gov/ds/425/ and USACE reservoir shapefiles.
@@ -185,5 +186,12 @@ COLUMNS:
 - max_ndci_spring: Spring maximum Normalized Difference Chlorophyll Index.        
 - max_ndci_summer: Summer maximum Normalized Difference Chlorophyll Index.       
 - max_ndci_winter: Winter maximum Normalized Difference Chlorophyll Index.
+- mean_total_visits: The average annual number of recreational visitors from 2014-2024.
+- min_Ca:
+- max_Ca:
+- avg_Ca:
+- min_pH:
+- max_pH:
+- avg_pH:
 - infest_status: Whether or not a reservoir is infested by ZQM or not according to NAS data (determined based on dist_to_infest_km=0 or <100m and not clearly in some other water body); 0=uninfested, 1=infested
 

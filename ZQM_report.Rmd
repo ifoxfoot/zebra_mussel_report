@@ -2,14 +2,14 @@
 title: "Exploring risk for Dreissenid invasion"
 author: "Todd Swannack, Iris Foxfoot, Kiara Cushway"
 date: "`r Sys.Date()`"
-output: 
+output:
   html_document:
     code_folding: hide
     toc: true
     toc_float: true
     toc_depth: 3
     number_sections: true
-toc-title: "Table of contents"
+toc-title: Table of contents
 sansfont: Calibri
 ---
 
@@ -118,7 +118,7 @@ kable(infest[,c(3,2)],col.names = c("Infestation status","Number of reservoirs")
 
 ## Environmental thresholds
 
-We attempted to predict and assess Dreissenid infestation in USACE reservoirs using environmental data and assessed invasion risk based on discrete environmental thresholds that have been identified in the literature as facilitating or preventing Dreissenid invasion (Doll 1997; Sorba and Williamson 1997; Cohen and Weinstein 1998; Cohen 2005; Carrillo et al. 2023). We used these environmental thresholds to define reservoir characteristics that may lead to low, moderate, or high risk of Dreissenid infestation (Table 2). Since not all literature reported the same thresholds, we chose the most conservative values such that we were more likely to overestimate than underestimate risk of infestation. For example, if one study defined low risk habitat as areas with a hardness < 45 mg/L and another as < 55 mg/L, we selected 45 mg/L as the maximum hardness describing low risk habitat, resulting in a wider moderate risk category.
+We attempted to predict and assess Dreissenid infestation in USACE reservoirs using environmental data and assessed invasion risk based on discrete environmental thresholds that have been identified in the literature as facilitating or preventing Dreissenid invasion (Doll 1997; Sorba and Williamson 1997; Cohen and Weinstein 1998; Cohen 2005; Creamer et al., 2025). We used these environmental thresholds to define reservoir characteristics that may lead to low, moderate, or high risk of Dreissenid infestation (Table 2). Since not all literature reported the same thresholds, we chose the most conservative values such that we were more likely to overestimate than underestimate risk of infestation. For example, if one study defined low risk habitat as areas with a hardness < 45 mg/L and another as < 55 mg/L, we selected 45 mg/L as the maximum hardness describing low risk habitat, resulting in a wider moderate risk category.
 
 Initially, we included maximum summer temperature in our risk assessment, but we found that the risk categories identified were not necessarily a good representation of invasion risk, as a higher proportion of moderate-risk reservoirs were already invaded by Dreissenids compared to high risk reservoirs. While maximum temperature is likely a factor that does limit Dreissenid range, the duration of high temperature events may be an important factor that was missing from our assessment. Since we have no information about how long maximum summer temperatures occurred, it is difficult to assess their effect on mussels, as Dreissenids may be able to survive short-term exposure to high temperatures but could have higher mortality during longer high temperature events (White et al., 2015). Hence, we removed maximum temperature from our risk assessment but included it in our statistical analyses investigating the relationship between environmental parameters and Dreissenid presence.
 
@@ -202,11 +202,11 @@ for (i in 1:nrow(thresholds)) {
 
 ## Loop through distance to nearest infestation to ID risk categories
 for (i in 1:nrow(thresholds)) {
-  if(thresholds$dist_to_infest_km[i] > 160) {
+  if(thresholds$dist_to_infest_km[i] > 125) {
     thresholds$dist_threshold_km[i] = "Low"
-  } else if (thresholds$dist_to_infest_km[i] >= 80 & thresholds$dist_to_infest_km[i] <= 160) {
+  } else if (thresholds$dist_to_infest_km[i] >= 51 & thresholds$dist_to_infest_km[i] <= 125) {
       thresholds$dist_threshold_km[i] = "Moderate"
-  } else if (thresholds$dist_to_infest_km[i] < 80) {
+  } else if (thresholds$dist_to_infest_km[i] < 51) {
       thresholds$dist_threshold_km[i] = "High"
   } else {
       thresholds$dist_threshold_km[i] = "Out of range"
@@ -252,6 +252,9 @@ for (i in 1:nrow(thresholds)) {
   }
 }
 
+#save thresholds with lake names
+#write.csv(thresholds, "risk_thresholds_per_res.csv")
+
 counts=thresholds %>% group_by(overall_risk,overall_risk_nodist) %>% summarise(count = n())
 
 ###Risk table
@@ -286,7 +289,7 @@ ggplot() +
 <br>
 <br>
 
-Since distance to infestation is likely to change over time as Dreissenids become established in new locations, we also assessed whether risk status changed if distance was not considered as a risk factor. Not considering distance resulted in 26 reservoirs with a low overall risk being elevated to high risk, and an additional 15 being elevated to moderate risk. Additionally, 19 reservoirs that were initially considered moderate risk based on distance to infestation were elevated to high risk.
+Since distance to infestation is likely to change over time as Dreissenids become established in new locations, we also assessed whether risk status changed if distance was not considered as a risk factor. Not considering distance resulted in 30 reservoirs with a low overall risk being elevated to high risk, and an additional 20 being elevated to moderate risk. Additionally, 58 reservoirs that were initially considered moderate risk based on distance to infestation were elevated to high risk.
 <br>
 
 ```{r}
@@ -306,7 +309,7 @@ ggplot() +
 
 ```
 
-**Figure 3.** Location of low, moderate, and high risk reservoirs for Dreissenid infestation when not considering distance to nearest infestation as a risk factor. Risk was based on mean summer temperature, total water hardness, calcium concentration, and pH. Low risk reservoirs in Arkansas and North Carolina/Georgia are caused by potentially unsuitable water chemistry. One reservoir in Arizona is considered unsuitable because of summer temperatures.
+**Figure 3.** Location of low, moderate, and high risk reservoirs for Dreissenid infestation when not considering distance to nearest infestation as a risk factor. Risk was based on mean summer temperature, total water hardness, calcium concentration, and pH. Low risk reservoirs are classified as such by potentially unsuitable water chemistry. One reservoir in Arizona is considered unsuitable because of summer temperatures.
 
 <br> <br>
 
@@ -421,7 +424,15 @@ overall_risk_long %>% ggplot(aes(fill = infestation,y = value,x = reorder(Risk_l
 
 <br>
 <br>
-Based on our risk categories, approximately 59% of high risk reservoirs have already recorded Dreissenid presence. Interestingly, approximately 27% of moderate risk reservoirs have also recorded Dreissenid presence. These reservoirs were ranked as moderate risk based on pH (n=14) or distance to nearest infestation (n=2). Most of the reservoirs limited by pH were located in the Arkansas River drainage or in the Black-Warrior Tombigbee system in Alabama. One pH-limited reservoir was located in Pennsylvania (Curwensville Lake) and the two distance limited reservoirs were in Iowa and North Dakota. With the exception of Curwensville Lake (Pennsylvania), Oliver Lake (Alabama), and Rathbun Lake (Iowa), all invaded moderate risk reservoirs have established Dreissenid populations, with some having been invaded as early as the 1990s. This could suggest that 1) more fine scale environmental data may be required to understand how intra-reservoir variation in environmental characteristics such as underlying geology could contribute to suitable conditions in reservoirs, or 2) that Dreissenids may be more tolerant of pH than expected. For the three remaining lakes where invasion status is unknown but positive Dreissenid records have occurred, it is possible that Dreissenids have been introduced to these reservoirs but have not been able to establish strong populations due to sub-optimal environmental conditions. For reservoirs with a moderate risk of invasion based on distance to the next nearest positive record, it is possible that Dreissenids were transported long distances by boaters given that few source populations were present nearby to fuel population expansion into these areas. Both lakes limited by distance were classified as high risk when excluding distance as a risk factor.
+Based on our risk categories, approximately 46% of high risk reservoirs have already recorded Dreissenid presence. Approximately 16% of moderate risk reservoirs have also recorded Dreissenid presence. These reservoirs were ranked as moderate risk based on pH (n=13), pH and distance (n=1), or distance alone (n=4). One low risk reservoir, lake Ruthbun, is infested. Lake Rathbun is classified as low risk due to distance to nearest infestation. It is 128 km from the nearest Dreissenid observation. 
+
+Most of the reservoirs limited by pH (e.g. moderate risk but still infested) were located in the Arkansas River drainage or in the Black-Warrior Tombigbee system in Alabama. One pH-limited and distance reservoir was located in Pennsylvania (Curwensville Lake). The five distance limited reservoirs (e.g. low or moderate risk but still infested) were in Iowa (Rothbun lake - low risk), North Dakota (Lake Ashtabula - moderate risk), Oklahoma (Waurika Lake - moderate risk), Kentucky (Lake Cumberland - moderate risk), Kansas (Wilson Lake - moderate risk), and Pennsylvania (Curwensville Lake - moderate risk). 
+
+*With the exception of Curwensville Lake (Pennsylvania), Oliver Lake (Alabama), and Rathbun Lake (Iowa), all invaded moderate risk reservoirs have established Dreissenid populations, with some having been invaded as early as the 1990s.* 
+
+The fact that pH limited reservoirs are infested suggest that 1) more fine scale environmental data may be required to understand how intra-reservoir variation in environmental characteristics such as underlying geology could contribute to suitable conditions in reservoirs, or 2) that Dreissenids may be more tolerant of pH than expected. For the three remaining lakes where invasion status is unknown but positive Dreissenid records have occurred, it is possible that Dreissenids have been introduced to these reservoirs but have not been able to establish strong populations due to sub-optimal environmental conditions. For reservoirs with a low or moderate risk of invasion based on distance to the next nearest positive record, it is possible that Dreissenids were transported long distances by boaters given that few source populations were present nearby to fuel population expansion into these areas. Information on recreational boater movement is not systematically collected, and thus there is a need to further study how boaters move and how they affect the risk of infestation.
+
+
 
 <br>
 <br>
@@ -430,7 +441,7 @@ Based on our risk categories, approximately 59% of high risk reservoirs have alr
 
 ## Summarise moderate risk lakes
 ## Load moderate reservoirs that are infested
-mod_infest = thresholds %>% filter((pH_threshold == "Moderate" | dist_threshold_km == "Moderate") & infest_status == 1)
+mod_infest = thresholds %>% filter((pH_threshold == "Moderate" | dist_threshold_km == "Moderate" | dist_threshold_km == "Low") & infest_status == 1)
 
 
 kable(mod_infest[,c(1,15:22)],col.names=c("Reservoir","Mean summer temp risk threshold","pH risk threshold","Hardness risk threshold","Calcium risk threshold","Distance risk threshold","Overall risk", "Overall risk without distance","Infestation status"),align="c") %>% kable_styling()%>% 
@@ -448,7 +459,7 @@ mod_infest$risk_var = NA
 
 ## Assign risk variables
 mod_infest$risk_var[which(mod_infest$pH_threshold == "Moderate")] = "pH"
-mod_infest$risk_var[which(mod_infest$dist_threshold_km == "Moderate")] = "Distance to nearest infestation"
+mod_infest$risk_var[which(mod_infest$dist_threshold_km %in% c("Moderate", "Low"))] = "Distance to nearest infestation"
 
 res_mod_infest = res_raw %>% filter(name %in% mod_infest$name)
 
@@ -466,7 +477,7 @@ ggplot() +
   scale_color_manual(values = c("pH" = "navyblue", "Distance to nearest infestation" = "orchid"), 
                      labels = c("pH" = "pH", "Distance to nearest infestation" = "Distance to nearest infestation"),
                      name = "Dreissenid Presence") +
-  labs(title = "Dreissenid presence in moderate risk USACE reservoirs") +
+  labs(title = "Dreissenid presence in moderate and low risk USACE reservoirs") +
   theme_void()
 ```
 
@@ -596,6 +607,8 @@ Note that the model did not converge with percent perennial snow and ice include
 
 Below is the model summary. The coefficient name (or input variable name) is in the first column on the left. The next column over, called `Estimate`, contains the coefficient value with tells you the directionality of influence that the coefficient has on the outcome variable. The column with the p value is on the far right. the AIC value is stated below the table output.
 
+**Logistic Regression 1** 
+
 ```{r}
 #some data cleaning
 landcover_50  <- ZQM_data %>%
@@ -613,6 +626,8 @@ Notes: In this model, there are no significant predictors of infestation.
 
 We then ran the model with a 25 mile buffer. Note that the model also did not converge with percent open water or percent snow and ice variables included.
 
+**Logistic Regression 2**
+
 ```{r}
 #some data cleaning
 landcover_25  <- ZQM_data %>%
@@ -629,6 +644,8 @@ summary(landcover_25_logit)
 Notes: When we ran the model with a 25 mile buffer, it showed barren land, forest cover, shrub cover, herbaceous cover, hay pasture cover, crop cover, and wetland cover to be significant predictors of infestation. Barren land has a slight positive influence on infestation, while all other significant variables are negatively associated with infestation. The model did not show any development categories to be significant. While this model does have a lower AIC value than the previous model, it still is not very low, indicating that this model is not performing particularly well.
 
 In the next model, we aggregate all development classifications into a single category, again using the 25 mile buffer.
+
+**Logistic Regression 3**
 
 ```{r}
 #looking at what happens when development landcovers are summed
@@ -650,6 +667,8 @@ Notes: The model showed all variables to be significant. Percent barren land has
 
 Next we ran a logistic regression with various water chemistry and geology characteristics as predictors. Note that many water chemistry variables are likely correlated, which is not ideal for logistic regression. This model is for exploratory purposes only. Below is the model summary.
 
+**Logistic Regression 4**
+
 ```{r}
 #looking at geology and water chemistry
 water_chem <- ZQM_data %>% 
@@ -670,6 +689,8 @@ Notes: This model seems to indicate that pH and calcium content are statisticall
 
 We also ran a logistic regression with various climate variables as predictors. Note that climate variables are likely all correlated, which is not ideal for logistic regression. This model is for exploratory purposes only.
 
+**Logistic Regression 5**
+
 ```{r}
 #looking at climate
 climate <- ZQM_data %>% 
@@ -686,6 +707,8 @@ summary(climate_logit)
 Notes: This model shows many temperature variables as being significant, and also summer and winter precipitation. The AIC value for this model is comparatively lower than models we examined previously.
 
 We also ran a logistic regression with just total precipitation and summer mean temperature, to simplify the number of variables and eliminate highly correlated variables.
+
+**Logistic Regression 6**
 
 ```{r}
 #looking at just mean temps
@@ -706,6 +729,10 @@ Notes: When looking at total precipitation and mean summer temperature, only mea
 <br> <br>
 
 ### Size, recreation, and connectivity
+
+In our next logistic regression, we looked at reservoir size (surface area), connectivity to other reservoirs, and the number of visitors.
+
+**Logistic Regression 7**
 
 ```{r, warning=FALSE}
 ## Looking at proximity to water bodies, connection status, etc
@@ -729,6 +756,8 @@ Notes: distance to infestation is the most significant predictor, and surface ar
 
 Next we will run a logistic regression using all the variables we used to classify risk. These are variables that have been identified as potentially limiting to Dreissenid mussels in the literature. The variables are distance to nearest infestation, mean hardness, average calcium content, average pH, and mean summer temperature.
 
+**Logistic Regression 8**
+
 ```{r, message=FALSE, warning=FALSE}
 ## Looking at proximity to water bodies, connection status, etc
 risk_vars <- ZQM_data %>% 
@@ -745,7 +774,7 @@ summary(risk_logit)
 
 Notes: Distance to infestation is significant and negatively associated with infestation. Mean summer temperature is significant and positively associated with infestation. All other input variables are not significant. This model has a low AIC, but it is slightly higher than the size, recreation, and connectivity logistic model.
 
-## Gradient boosted model
+## Gradient Boosted Model
 
 A gradient boosted model (GBM) is a flexible machine learning algorithm that is immune to issues caused by multicollinearity. It works by combining multiple weak models (think small decision trees) into one strong model.
 
@@ -762,6 +791,8 @@ We made the following modifications to the data to reduce the number of inputs.
 -   We used max calcium, max pH, and max hardness as water chemistry inputs
 
 Below is a summary of the model, trained using the training data.
+
+**Gradient Boosted Model 1**
 
 ```{r warning=FALSE,message=FALSE,fig.height=20,fig.width=20,attr.output='style="max-height: 500px;"'}
 library(gbm) #for gradient boosting models
@@ -941,6 +972,8 @@ To account for highly correlated variables, which can affect variable importance
 
 Below is a random forest model trained with the same training data given to the gradient boosted model. First the variable importance is displayed:
 
+**Random Forest Model 1**
+
 ```{r, fig.height = 15,fig.width=15}
 ## Random forest with training and test datasets
 
@@ -986,7 +1019,9 @@ Here, our RF model correctly classifies reservoirs based on Dreissenid presence 
 <br>
 <br>
 
-## Random forest with reduced variables
+### Random forest with reduced variables
+
+**Random Forest Model 2**
 
 ```{r}
 ## Random forest with training and test datasets
@@ -1039,9 +1074,11 @@ Removing all but the 10 most influential variables actually decreases the perfor
 <br>
 <br>
 
-## Random forest with risk variables
+### Random forest with risk variables
 
 Next, we will try the random forest using only the variables identified for risk thresholds to see if we can successfully classify reservoirs based on only a few environmental variables. Below, we have the variable importance plot:
+
+**Random Forest Model 3**
 
 ```{r}
 ## Random forest with training and test datasets
@@ -1087,9 +1124,11 @@ confusionMatrix(p_test, as.factor(test_split_risk$infest_status),positive = '1')
 
 Here, we can see that reducing the number of variables in our model resulted in little decrease in model accuracy (~82%) and the balanced accuracy (~74%) of our RF model. However, the model's sensitivity is still relatively poor and our accuracy is not significantly better than the no information rate. One factor that could be contributing to this is that the average temperatures of the reservoirs may not be particularly useful for distinguishing between reservoirs that are at risk of invasion. This is pretty clear in our risk assessment, because only a single reservoir is classified below high risk based on our thresholds. Hence, we decided to also try a Random Forest model without mean summer temperature.
 
-## Random forest with reduced variables no temperature
+### Random forest with reduced variables no temperature
 
 Since we know we have limited information about duration of temperature stressors, we will also try the random forest using only the variables identified for risk thresholds, but excluding temperature risk thresholds.
+
+**Random Forest Model 4**
 
 ```{r}
 ## Random forest with training and test datasets
