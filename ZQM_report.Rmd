@@ -1059,25 +1059,25 @@ It is also possible to see the general relationship between the predictor variab
 
 ```{r}
 #plot some rough graphs showing relationship between infestation and key vars
-plot(infest_gbm,i="dist_to_infest_km", type = "response")
+plot(infest_gbm,i="dist_to_infest_km", type = "response", xlab = "Distance to nearest infestation (km)")
 ```
 
 **Figure 13.** There is a negative relationship between infestation and the distance to the nearest infested body of water. Infestation is much more likely when other infestations are close.
 
 ```{r}
-plot(infest_gbm,i="max_Ca", type = "response") 
+plot(infest_gbm,i="max_Ca", type = "response", xlab = "Maximum calcium concentration (mg/L)") 
 ```
 
 **Figure 14.** There is a positive relationship between observed maximum calcium levels and infestation status.
 
 ```{r}
-plot(infest_gbm,i="surface_area_km", type = "response") 
+plot(infest_gbm,i="surface_area_km", type = "response", xlab = "Surface area (km^2)") 
 ```
 
 **Figure 15.** There is a positive relationship between infestation and the size of the reservoir. Larger reservoirs are more likely to be infested.
 
 ```{r}
-plot(infest_gbm,i="summer_mean_temp", type = "response") 
+plot(infest_gbm,i="summer_mean_temp", type = "response", xlab = "Mean summer temperature (C)") 
 ```
 
 **Figure 16.** There is a positive relationship between summer mean temperatures and infestation status.
@@ -1195,12 +1195,15 @@ infest_rf = randomForest(as.factor(infest_status) ~ ., #writing the formula
                           importance = TRUE #specifying importance of variables should be assessed
                           )
 
+## Change colnames for better x-axis labels in importance plot
+colnames(infest_rf$importance) = c("0", "1", "Mean decrease in accuracy", "Mean decrease in Gini impurity")
+
 ## Check variable importance
 varImpPlot(infest_rf,sort = T,n.var = (length(train_split) - 1),main = "Variable importance plot")
 
 ```
 <br>
-**Figure 17.** Variable importance plot for variables in the random forest model. 'MeanDecreaseAccuracy' indicates the decrease in accuracy of the model should a given variable be randomly permuted (i.e., its effect removed). 'MeanDecreaseGini' is a measure of the average gain in purity of splits for a given variable.
+**Figure 17.** Variable importance plot for variables in the random forest model. 'Mean decrease in accuracy' indicates the decrease in accuracy of the model should a given variable be randomly permuted (i.e., its effect removed). 'Mean decrease in Gini impurity' is a measure of the average gain in purity of splits for a given variable.
 
 Then we will create a confusion matrix for the training data and test its performance for classification:
 
@@ -1230,7 +1233,7 @@ Here, our RF model correctly classifies reservoirs based on Dreissenid presence 
 
 **Random Forest Model 2**
 
-```{r}
+```{r, fig.width=10}
 ## Random forest with training and test datasets
 
 train_split_red = train_split %>% select(c(dist_to_infest_km,max_Ca,summer_mean_temp,
@@ -1252,11 +1255,14 @@ rf_ten_vars = randomForest(as.factor(infest_status) ~ ., #writing the formula
                           importance = TRUE #specifying importance of variables should be assessed
                           )
 
+## Change colnames for better x-axis labels in importance plot
+colnames(rf_ten_vars$importance) = c("0", "1", "Mean decrease in accuracy", "Mean decrease in Gini impurity")
+
 ## Check variable importance
 varImpPlot(rf_ten_vars,sort = T,main = "Variable importance plot")
 ```
 <br>
-**Figure 18.** Variable importance plot for the top 10 variables in the random forest model. 'MeanDecreaseAccuracy' indicates the decrease in accuracy of the model should a given variable be randomly permuted (i.e., its effect removed). 'MeanDecreaseGini' is a measure of the average gain in purity of splits for a given variable.
+**Figure 18.** Variable importance plot for the top 10 variables in the random forest model. 'Mean decrease in accuracy' indicates the decrease in accuracy of the model should a given variable be randomly permuted (i.e., its effect removed). 'Mean decrease in Gini impurity' is a measure of the average gain in purity of splits for a given variable.
 <br>
 <br>
 Next, we will create a confusion matrix for the training data.
@@ -1287,7 +1293,7 @@ Next, we will try the random forest using only the variables identified for risk
 
 **Random Forest Model 3**
 
-```{r}
+```{r fig.width=10}
 ## Random forest with training and test datasets
 
 train_split_risk = train_split %>% select(c(dist_to_infest_km,max_Ca,max_pH,max_hardness,summer_mean_temp,infest_status))
@@ -1303,11 +1309,14 @@ rf_risk_vars = randomForest(as.factor(infest_status) ~ ., #writing the formula
                           importance = TRUE #specifying importance of variables should be assessed
                           )
 
+## Change colnames for better x-axis labels in importance plot
+colnames(rf_risk_vars$importance) = c("0", "1", "Mean decrease in accuracy", "Mean decrease in Gini impurity")
+
 ## Check variable importance
 varImpPlot(rf_risk_vars,sort = T,main = "Variable importance plot")
 ```
 <br>
-**Figure 19.** Variable importance plot for risk variables in the random forest model. 'MeanDecreaseAccuracy' indicates the decrease in accuracy of the model should a given variable be randomly permuted (i.e., its effect removed). 'MeanDecreaseGini' is a measure of the average gain in purity of splits for a given variable.
+**Figure 19.** Variable importance plot for risk variables in the random forest model. 'Mean decrease in accuracy' indicates the decrease in accuracy of the model should a given variable be randomly permuted (i.e., its effect removed). 'Mean decrease in Gini impurity' is a measure of the average gain in purity of splits for a given variable.
 <br>
 <br>
 Next, we will create a confusion matrix for the training data.
@@ -1337,7 +1346,7 @@ Since we know we have limited information about duration of temperature stressor
 
 **Random Forest Model 4**
 
-```{r}
+```{r fig.width=10}
 ## Random forest with training and test datasets
 
 train_split_red_temp = train_split %>% select(c(dist_to_infest_km,max_Ca,max_pH,max_hardness,infest_status))
@@ -1353,12 +1362,16 @@ rf_risk_vars_temp = randomForest(as.factor(infest_status) ~ ., #writing the form
                           importance = TRUE #specifying importance of variables should be assessed
                           )
 
+## Change colnames for better x-axis labels in importance plot
+colnames(rf_risk_vars_temp$importance) = c("0", "1", "Mean decrease in accuracy", "Mean decrease in Gini impurity")
+
+
 ## Check variable importance
 varImpPlot(rf_risk_vars_temp,sort = T,main = "Variable importance plot")
 
 ```
 <br>
-**Figure 20.** Variable importance plot for risk variables in the random forest model, excluding mean summer temperature. 'MeanDecreaseAccuracy' indicates the decrease in accuracy of the model should a given variable be randomly permuted (i.e., its effect removed). 'MeanDecreaseGini' is a measure of the average gain in purity of splits for a given variable.
+**Figure 20.** Variable importance plot for risk variables in the random forest model, excluding mean summer temperature. 'Mean decrease in accuracy' indicates the decrease in accuracy of the model should a given variable be randomly permuted (i.e., its effect removed). 'Mean decrease in Gini impurity' is a measure of the average gain in purity of splits for a given variable.
 <br> <br> Then we will create a confusion matrix for the training data.
 
 ```{r attr.output='style="max-height: 500px;"'}
