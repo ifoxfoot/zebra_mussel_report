@@ -127,7 +127,7 @@ final_plot <- plot_grid(combined_plot, c_legend, ncol = 2, rel_widths = c(3, 2))
 # Print the combined plot
 ggdraw(final_plot)
 
-ggsave("figures/risk_maps_threshold.png", plot = final_plot, width = 7, height = 4)
+ggsave("figures/risk_maps_threshold.png", plot = final_plot, bg = "white", width = 7, height = 4)
 ```
 
 # Making plot
